@@ -1,12 +1,12 @@
-import * as Joi from "joi";
+import { z } from "zod";
 
-export const configValidationSchema = Joi.object({
-	PORT: Joi.number().default(3000),
-	STAGE: Joi.string().required(),
-	DB_HOST: Joi.string().required(),
-	DB_PORT: Joi.number().default(5432).required(),
-	DB_USERNAME: Joi.string().required(),
-	DB_PASSWORD: Joi.string().required().allow(""),
-	DB_DATABASE: Joi.string().required(),
-	JWT_SECRET: Joi.string().required(),
+export const configValidationSchema = z.object({
+  PORT: z.coerce.number().default(3000),
+  STAGE: z.string(),
+  DB_HOST: z.string(),
+  DB_PORT: z.coerce.number().default(5432),
+  DB_USERNAME: z.string(),
+  DB_PASSWORD: z.string().optional(),
+  DB_DATABASE: z.string(),
+  JWT_SECRET: z.string(),
 });

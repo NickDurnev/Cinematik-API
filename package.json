@@ -36,13 +36,13 @@
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",
     "husky": "^9.1.7",
-    "joi": "^17.13.3",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "pg": "^8.16.2",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
-    "typeorm": "^0.3.25"
+    "typeorm": "^0.3.25",
+    "zod": "^3.25.67"
   },
   "devDependencies": {
     "@nestjs/cli": "^11.0.7",
