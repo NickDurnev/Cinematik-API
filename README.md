@@ -43,6 +43,32 @@ The API is used to access and manipulate data related to tasks and users. It con
 $ npm install
 ```
 
+## Running MacOS Postgres DB locally 
+
+```bash
+$ brew services start postgresql@14
+```
+
+Create DB 
+
+```bash
+$ createdb cinematik_api
+```
+
+List DB's
+
+```bash
+$ psql -l
+```
+
+Check connection 
+
+```bash
+$ psql -d cinematik_api -c "\dt"
+```
+
+If you got "Did not find any relations", you successfully connected ✅
+
 ## Running the app
 
 ```bash
