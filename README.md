@@ -69,6 +69,21 @@ $ psql -d cinematik_api -c "\dt"
 
 If you got "Did not find any relations", you successfully connected ✅
 
+
+## Migrations 
+
+Generate SQL migrations file using Drizzle-Kit
+
+```bash
+$ npx drizzle-kit generate
+```
+
+Apply generated SQL migration files
+
+```bash
+$ npx drizzle-kit migrate
+```
+
 ## Running the app
 
 ```bash
