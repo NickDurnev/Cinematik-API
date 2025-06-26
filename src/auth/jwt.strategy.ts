@@ -1,11 +1,13 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { PassportStrategy } from '@nestjs/passport';
-import { InjectRepository } from '@nestjs/typeorm';
-import { ExtractJwt, Strategy } from 'passport-jwt';
-import { UsersRepository } from './user.repository';
-import { JwtPayload } from './jwt-payload.interface';
-import { User } from './user.entity';
+import { Injectable, UnauthorizedException } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { PassportStrategy } from "@nestjs/passport";
+import { InjectRepository } from "@nestjs/typeorm";
+import { ExtractJwt, Strategy } from "passport-jwt";
+import { JwtPayload } from "./jwt-payload.interface";
+import * as schema from "./schema";
+import { UsersRepository } from "./user.repository";
+
+type User = typeof schema.users.$inferSelect;
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -20,11 +22,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(payload: JwtPayload): Promise<User> {
-    const { username } = payload;
-    const user: User = await this.usersRepository.findOne({
-      where: { username },
-    });
+  async validate(payload: JwtPayload): Promise<User | null> {
+    const { name } = payload;
+    const user = await this.usersRepository.findByName(name);
 
     if (!user) {
       throw new UnauthorizedException();

@@ -14,7 +14,14 @@ export class AuthController {
   @Post('/signin')
   signIn(
     @Body() authCredentialsDto: AuthCredentialsDto,
-  ): Promise<{ accessToken: string }> {
+  ): Promise<{ accessToken: string; refreshToken: string }> {
     return this.authService.SignIn(authCredentialsDto);
+  }
+
+  @Post('/refresh')
+  refresh(
+    @Body('refreshToken') refreshToken: string,
+  ): Promise<{ accessToken: string }> {
+    return this.authService.refreshAccessToken(refreshToken);
   }
 }
