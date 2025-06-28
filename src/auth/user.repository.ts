@@ -5,16 +5,17 @@ import {
   InternalServerErrorException,
 } from "@nestjs/common";
 import * as bcrypt from "bcrypt";
+import { eq } from "drizzle-orm";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { DATABASE_CONNECTION } from "@/database/database.connection";
 import { AuthCredentialsDto } from "./dto/auth-credentials.dto";
 import * as schema from "./schema";
 
-@Injectable() // here
+@Injectable()
 export class UsersRepository {
   constructor(
     @Inject(DATABASE_CONNECTION)
-    private readonly database: NodePgDatabase<typeof schema>,
+    private readonly database: NodePgDatabase,
   ) {}
 
   async createUser(authCredentialsDto: AuthCredentialsDto): Promise<void> {

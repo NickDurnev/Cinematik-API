@@ -1,10 +1,10 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { AppController } from "@/app.controller";
-import { AuthModule } from "@/auth/auth.module";
+import AuthModule from "@/auth/auth.module";
 import { configValidationSchema } from "@/config.schema";
 import { DatabaseModule } from "@/database/database.module";
-import { TasksModule } from "@/tasks/tasks.module";
+import ReviewsModule from "@/reviews/reviews.module";
 
 @Module({
   imports: [
@@ -14,7 +14,7 @@ import { TasksModule } from "@/tasks/tasks.module";
         return configValidationSchema.parse(config);
       },
     }),
-    TasksModule,
+    ReviewsModule,
     AuthModule,
     DatabaseModule,
   ],

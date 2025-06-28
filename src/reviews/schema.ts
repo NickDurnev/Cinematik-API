@@ -9,3 +9,5 @@ export const reviews = pgTable("reviews", {
   rating: varchar("rating", { length: 5 }).notNull().unique(),
   ...timestamps,
 });
+
+export type Review = typeof reviews.$inferSelect;

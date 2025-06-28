@@ -28,4 +28,4 @@ import { UsersRepository } from "./user.repository";
   providers: [AuthService, UsersRepository, JwtStrategy],
   exports: [JwtStrategy, PassportModule],
 })
-export class AuthModule {}
+export default class AuthModule {}
