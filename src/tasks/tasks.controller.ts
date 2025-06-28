@@ -3,26 +3,26 @@ import {
   Controller,
   Delete,
   Get,
+  Logger,
   Param,
   Patch,
   Post,
   Query,
   UseGuards,
-  Logger,
-} from '@nestjs/common';
-import { TasksService } from './tasks.service';
-import { Task } from './task.entity';
-import { CreateTaskDto } from './dto/create-task.dto';
-import { GetTaskFilterDto } from './dto/get-tasks.dto';
-import { UpdateTaskStatusDto } from './dto/update-task-status.dto';
-import { AuthGuard } from '@nestjs/passport';
-import { GetUser } from '../auth/get-user.decorator';
-import { User } from '../auth/user.entity';
+} from "@nestjs/common";
+import { AuthGuard } from "@nestjs/passport";
+import { GetUser } from "@/auth/get-user.decorator";
+import { User } from "@/auth/schema";
+import { CreateTaskDto } from "./dto/create-task.dto";
+import { GetTaskFilterDto } from "./dto/get-tasks.dto";
+import { UpdateTaskStatusDto } from "./dto/update-task-status.dto";
+import { Task } from "./task.entity";
+import { TasksService } from "./tasks.service";
 
-@Controller('tasks')
+@Controller("tasks")
 @UseGuards(AuthGuard())
 export class TasksController {
-  private logger = new Logger('TasksController');
+  private logger = new Logger("TasksController");
 
   constructor(private taskService: TasksService) {}
 
@@ -32,14 +32,14 @@ export class TasksController {
     @GetUser() user: User,
   ): Promise<Task[]> {
     this.logger.verbose(
-      `User "${user.username}" retrieving all tasks. Filters: ${JSON.stringify(
+      `User "${user.name}" retrieving all tasks. Filters: ${JSON.stringify(
         filterDto,
       )}`,
     );
     return this.taskService.getTasks(filterDto, user);
   }
 
-  @Get('/:id')
+  @Get("/:id")
   getTaskById(@Param('id') id: string, @GetUser() user: User): Promise<Task> {
     return this.taskService.getTaskById(id, user);
   }
@@ -50,14 +50,14 @@ export class TasksController {
     @GetUser() user: User,
   ): Promise<Task> {
     this.logger.verbose(
-      `User "${user.username}" creating a new task. Data: ${JSON.stringify(
+      `User "${user.name}" creating a new task. Data: ${JSON.stringify(
         createTaskDto,
       )}`,
     );
     return this.taskService.createTask(createTaskDto, user);
   }
 
-  @Patch('/:id/:status')
+  @Patch("/:id/:status")
   updateTaskById(
     @Param('id') id: string,
     @Body() updateTaskStatusDto: UpdateTaskStatusDto,
@@ -67,7 +67,7 @@ export class TasksController {
     return this.taskService.updateTaskById(id, status, user);
   }
 
-  @Delete('/:id')
+  @Delete("/:id")
   deleteTaskById(
     @Param('id') id: string,
     @GetUser() user: User,
