@@ -1,11 +1,11 @@
 {
-  "id": "340f1e19-d1ef-4724-8a70-e07e79f2f9b1",
-  "prevId": "4742af03-c1f8-448a-aa47-aa013cb0296f",
+  "id": "3e512ea2-65c4-42c0-993e-004554ac3bcd",
+  "prevId": "340f1e19-d1ef-4724-8a70-e07e79f2f9b1",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
-    "public.user": {
-      "name": "user",
+    "public.users": {
+      "name": "users",
       "schema": "",
       "columns": {
         "id": {
@@ -58,15 +58,15 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "user_name_unique": {
-          "name": "user_name_unique",
+        "users_name_unique": {
+          "name": "users_name_unique",
           "nullsNotDistinct": false,
           "columns": [
             "name"
           ]
         },
-        "user_email_unique": {
-          "name": "user_email_unique",
+        "users_email_unique": {
+          "name": "users_email_unique",
           "nullsNotDistinct": false,
           "columns": [
             "email"
@@ -123,10 +123,10 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "reviews_user_id_user_id_fk": {
-          "name": "reviews_user_id_user_id_fk",
+        "reviews_user_id_users_id_fk": {
+          "name": "reviews_user_id_users_id_fk",
           "tableFrom": "reviews",
-          "tableTo": "user",
+          "tableTo": "users",
           "columnsFrom": [
             "user_id"
           ],
