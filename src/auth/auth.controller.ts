@@ -1,5 +1,8 @@
 import { Body, Controller, Post } from "@nestjs/common";
-import { TokensData } from "@/types";
+
+import { ResponseCode, ResponseWrapper,TokensData } from "@/types";
+import { buildResponse } from "@/utils/response/response-wrapper";
+
 import { AuthService } from "./auth.service";
 import { AuthCredentialsDto, AuthSignInDto } from "./dto/auth-credentials.dto";
 
@@ -8,21 +11,24 @@ export class AuthController {
   constructor(private authService: AuthService) {}
 
   @Post('/signup')
-  signUp(@Body() authCredentialsDto: AuthCredentialsDto): Promise<TokensData> {
-    return this.authService.SignUp(authCredentialsDto);
-  }
+  async signUp(@Body() authCredentialsDto: AuthCredentialsDto): Promise<ResponseWrapper<TokensData>> {
+  const tokens = await this.authService.SignUp(authCredentialsDto);
+  return buildResponse(tokens, ResponseCode.CREATED, "User signed up", "success");  
+}
 
   @Post('/signin')
-  signIn(
+  async signIn(
     @Body() authSignInDto: AuthSignInDto,
-  ): Promise<TokensData> {
-    return this.authService.SignIn(authSignInDto);
+  ): Promise<ResponseWrapper<TokensData>> {
+    const tokens = await this.authService.SignIn(authSignInDto);
+    return buildResponse(tokens, ResponseCode.CREATED, "User signed in", "success");  
   }
 
   @Post('/refresh')
-  refresh(
+  async refresh(
     @Body('refreshToken') refreshToken: string,
-  ): Promise<Pick<TokensData, "access_token" | "access_token_expires">> {
-    return this.authService.refreshAccessToken(refreshToken);
+  ): Promise<ResponseWrapper<Pick<TokensData, "access_token" | "access_token_expires">>> {
+    const tokens = await this.authService.refreshAccessToken(refreshToken);
+    return buildResponse(tokens, ResponseCode.CREATED, "Access token refreshed", "success");
   }
 }

@@ -24,6 +24,8 @@ export class AuthService {
 
       return this.generateTokens(payload);
     }
+
+    throw new UnauthorizedException("User already exists");
   }
 
   async SignIn(authSignInDto: AuthSignInDto): Promise<TokensData> {

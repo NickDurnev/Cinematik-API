@@ -7,6 +7,7 @@ import {
 import * as bcrypt from "bcrypt";
 import { eq } from "drizzle-orm";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
+
 import { DATABASE_CONNECTION } from "@/database/database.connection";
 
 import { AuthCredentialsDto } from "./dto/auth-credentials.dto";
@@ -35,13 +36,11 @@ export class UsersRepository {
       name,
       password: hashedPassword,
       email,
+      picture: "",
     };
     try {
       return (await this.database.insert(users).values(user).returning())[0];
     } catch (error) {
-      console.log(' error_code', error.code);
-      console.log(' error detail', error.detail);
-      
       if (error.code === "23505") {
         // Check if it's a name or email constraint violation
         if (error.detail && error.detail.includes("name")) {
