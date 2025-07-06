@@ -5,7 +5,7 @@ import { timestamps } from "@/utils/columns";
 
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
-  name: varchar("name", { length: 255 }).notNull().unique(),
+  name: varchar("name", { length: 255 }).notNull(),
   email: varchar("email", { length: 255 }).notNull().unique(),
   password: varchar("password", { length: 255 }),
   picture: text("picture"),

@@ -4,9 +4,9 @@ import { IsString, Matches, MaxLength, MinLength } from "class-validator";
 export class AuthCredentialsDto {
   @ApiProperty({
     description: "User's full name",
-    example: "John Doe",
+    example: "John",
     minLength: 2,
-    maxLength: 20,
+    maxLength: 40,
   })
   @IsString()
   @MinLength(2)
@@ -39,7 +39,7 @@ export class AuthCredentialsDto {
 export class AuthSocialDto {
   @ApiProperty({
     description: "User's full name",
-    example: "John Doe",
+    example: "John",
     minLength: 4,
     maxLength: 20,
   })

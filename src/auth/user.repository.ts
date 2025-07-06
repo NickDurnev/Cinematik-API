@@ -10,7 +10,7 @@ import { NodePgDatabase } from "drizzle-orm/node-postgres";
 
 import { DATABASE_CONNECTION } from "@/database/database.connection";
 
-import { AuthCredentialsDto } from "./dto/auth-credentials.dto";
+import { AuthCredentialsDto,AuthSocialDto } from "./dto/auth-credentials.dto";
 import { User, users } from "./schema";
 
 @Injectable()
@@ -20,15 +20,8 @@ export class UsersRepository {
     private readonly database: NodePgDatabase,
   ) {}
 
-  async createUser(authCredentialsDto: AuthCredentialsDto): Promise<User> {
+  async createUserByCredentials(authCredentialsDto: AuthCredentialsDto): Promise<User> {
     const { name, password, email } = authCredentialsDto;
-
-    // Check if user already exists
-    const existingUser = await this.findByEmail(email);
-
-    if (existingUser) {
-      throw new ConflictException("User already exists");
-    }
 
     const salt = await bcrypt.genSalt();
     const hashedPassword = await bcrypt.hash(password, salt);
@@ -46,6 +39,23 @@ export class UsersRepository {
       throw new InternalServerErrorException("Failed to create user");
     }
   }
+
+   async createUserBySocial(authSocialDto: AuthSocialDto): Promise<User> {
+    const { name, email, picture } = authSocialDto;
+
+    const user = {
+      name,
+      email,
+      picture,
+    };
+    try {
+      return (await this.database.insert(users).values(user).returning())[0];
+    } catch (error) {
+      console.error("Database error during user creation:", error);
+      throw new InternalServerErrorException("Failed to create user");
+    }
+  }
+  
 
   async findByName(name: string) {
     const usersData = await this.database

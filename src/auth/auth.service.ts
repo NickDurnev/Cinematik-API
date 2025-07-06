@@ -1,11 +1,19 @@
-import { Injectable, UnauthorizedException } from "@nestjs/common";
+import {
+  ConflictException,
+  Injectable,
+  UnauthorizedException,
+} from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 import * as bcrypt from "bcrypt";
 
 import { TokensData } from "@/types";
 
-import { AuthCredentialsDto, AuthSignInDto } from "./dto/auth-credentials.dto";
+import {
+  AuthCredentialsDto,
+  AuthSignInDto,
+  AuthSocialDto,
+} from "./dto/auth-credentials.dto";
 import { JwtPayload } from "./jwt-payload.interface";
 import { UsersRepository } from "./user.repository";
 
@@ -18,15 +26,37 @@ export class AuthService {
   ) {}
 
   async SignUp(authCredentialsDto: AuthCredentialsDto): Promise<TokensData> {
-    const user = await this.usersRepository.createUser(authCredentialsDto);
+    const existingUser = await this.usersRepository.findByEmail(
+      authCredentialsDto.email,
+    );
+
+    if (existingUser) {
+      throw new ConflictException("User already exists");
+    }
+
+    const user =
+      await this.usersRepository.createUserByCredentials(authCredentialsDto);
 
     if (user) {
-      const payload: JwtPayload = { name: user.name, email: user.email };
-
-      return this.generateTokens(payload);
+      return this.generateTokens({ name: user.name, email: user.email });
     }
 
     throw new UnauthorizedException("User already exists");
+  }
+
+  async socialLogin(authSocialDto: AuthSocialDto): Promise<TokensData> {
+    let user = await this.usersRepository.findByEmail(authSocialDto.email);
+
+    if (!user) {
+      user = await this.usersRepository.createUserBySocial(authSocialDto);
+      if (!user) {
+        throw new UnauthorizedException(
+          "Unable to create user with social login",
+        );
+      }
+    }
+
+    return this.generateTokens({ name: user.name, email: user.email });
   }
 
   async SignIn(authSignInDto: AuthSignInDto): Promise<TokensData> {
@@ -34,9 +64,7 @@ export class AuthService {
     const user = await this.usersRepository.findByEmail(email);
 
     if (user && password && (await bcrypt.compare(password, user.password))) {
-      const payload: JwtPayload = { name: user.name, email: user.email };
-
-      return this.generateTokens(payload);
+      return this.generateTokens({ name: user.name, email: user.email });
     } else {
       throw new UnauthorizedException("Please check your login credentials");
     }
