@@ -24,9 +24,10 @@ export class UsersRepository {
     const { name, password, email } = authCredentialsDto;
 
     // Check if user already exists
-    const existingUser = await this.findByName(name);
+    const existingUser = await this.findByEmail(email);
+
     if (existingUser) {
-      throw new ConflictException("Username already exists");
+      throw new ConflictException("User already exists");
     }
 
     const salt = await bcrypt.genSalt();
@@ -41,17 +42,6 @@ export class UsersRepository {
     try {
       return (await this.database.insert(users).values(user).returning())[0];
     } catch (error) {
-      if (error.code === "23505") {
-        // Check if it's a name or email constraint violation
-        if (error.detail && error.detail.includes("name")) {
-          throw new ConflictException("Username already exists");
-        } else if (error.detail && error.detail.includes("email")) {
-          throw new ConflictException("Email already exists");
-        } else {
-          throw new ConflictException("User already exists");
-        }
-      }
-      // Log other errors and re-throw them
       console.error("Database error during user creation:", error);
       throw new InternalServerErrorException("Failed to create user");
     }

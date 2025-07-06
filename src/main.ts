@@ -3,6 +3,7 @@ import { NestFactory } from "@nestjs/core";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 
 import { ResponseInterceptor } from "@/utils/response/response.interceptor";
+import ResponseExceptionFilter from "@/utils/response/response-exception.filter";
 
 import { AppModule } from "./app.module";
 import { TransformInterceptor } from "./transform.interceptor";
@@ -25,6 +26,7 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe());
   app.useGlobalInterceptors(new TransformInterceptor());
   app.useGlobalInterceptors(new ResponseInterceptor());
+  app.useGlobalFilters(new ResponseExceptionFilter());
 
   SwaggerModule.setup("api", app, document);
 

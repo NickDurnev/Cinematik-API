@@ -2,6 +2,7 @@ import { Injectable, UnauthorizedException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 import * as bcrypt from "bcrypt";
+
 import { TokensData } from "@/types";
 
 import { AuthCredentialsDto, AuthSignInDto } from "./dto/auth-credentials.dto";
