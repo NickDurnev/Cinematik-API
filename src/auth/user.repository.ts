@@ -1,5 +1,4 @@
 import {
-  ConflictException,
   Inject,
   Injectable,
   InternalServerErrorException,
@@ -9,8 +8,9 @@ import { eq } from "drizzle-orm";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
 
 import { DATABASE_CONNECTION } from "@/database/database.connection";
+import { Review, reviews } from "@/reviews/schema";
 
-import { AuthCredentialsDto,AuthSocialDto } from "./dto/auth-credentials.dto";
+import { AuthCredentialsDto, AuthSocialDto } from "./dto/auth-credentials.dto";
 import { User, users } from "./schema";
 
 @Injectable()
@@ -20,7 +20,9 @@ export class UsersRepository {
     private readonly database: NodePgDatabase,
   ) {}
 
-  async createUserByCredentials(authCredentialsDto: AuthCredentialsDto): Promise<User> {
+  async createUserByCredentials(
+    authCredentialsDto: AuthCredentialsDto,
+  ): Promise<User> {
     const { name, password, email } = authCredentialsDto;
 
     const salt = await bcrypt.genSalt();
@@ -40,7 +42,7 @@ export class UsersRepository {
     }
   }
 
-   async createUserBySocial(authSocialDto: AuthSocialDto): Promise<User> {
+  async createUserBySocial(authSocialDto: AuthSocialDto): Promise<User> {
     const { name, email, picture } = authSocialDto;
 
     const user = {
@@ -55,7 +57,6 @@ export class UsersRepository {
       throw new InternalServerErrorException("Failed to create user");
     }
   }
-  
 
   async findByName(name: string) {
     const usersData = await this.database
@@ -71,5 +72,21 @@ export class UsersRepository {
       .from(users)
       .where(eq(users.email, email));
     return usersData[0] || null;
+  }
+
+  async formatUserData(user: User) {
+    const userReview = await this.database
+      .select()
+      .from(reviews)
+      .where(eq(reviews.user_id, user.id));
+
+    const userData = {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      picture: user.picture,
+      is_left_review: !!userReview[0],
+    };
+    return userData;
   }
 }

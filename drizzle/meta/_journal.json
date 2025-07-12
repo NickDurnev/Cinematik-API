@@ -29,6 +29,13 @@
       "when": 1751141412743,
       "tag": "0004_careless_the_initiative",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1751826965187,
+      "tag": "0004_green_bishop",
+      "breakpoints": true
     }
   ]
 }

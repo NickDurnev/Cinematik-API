@@ -7,7 +7,7 @@ import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 import * as bcrypt from "bcrypt";
 
-import { TokensData } from "@/types";
+import { AuthData, TokensData } from "@/types";
 
 import {
   AuthCredentialsDto,
@@ -25,7 +25,7 @@ export class AuthService {
     private configService: ConfigService,
   ) {}
 
-  async SignUp(authCredentialsDto: AuthCredentialsDto): Promise<TokensData> {
+  async SignUp(authCredentialsDto: AuthCredentialsDto): Promise<AuthData> {
     const existingUser = await this.usersRepository.findByEmail(
       authCredentialsDto.email,
     );
@@ -38,13 +38,19 @@ export class AuthService {
       await this.usersRepository.createUserByCredentials(authCredentialsDto);
 
     if (user) {
-      return this.generateTokens({ name: user.name, email: user.email });
+      const tokens = await this.generateTokens({
+        name: user.name,
+        email: user.email,
+      });
+
+      const userData = await this.usersRepository.formatUserData(user);
+      return { tokens, user: userData };
     }
 
     throw new UnauthorizedException("User already exists");
   }
 
-  async socialLogin(authSocialDto: AuthSocialDto): Promise<TokensData> {
+  async socialLogin(authSocialDto: AuthSocialDto): Promise<AuthData> {
     let user = await this.usersRepository.findByEmail(authSocialDto.email);
 
     if (!user) {
@@ -56,15 +62,27 @@ export class AuthService {
       }
     }
 
-    return this.generateTokens({ name: user.name, email: user.email });
+    const tokens = await this.generateTokens({
+      name: user.name,
+      email: user.email,
+    });
+
+    const userData = await this.usersRepository.formatUserData(user);
+    return { tokens, user: userData };
   }
 
-  async SignIn(authSignInDto: AuthSignInDto): Promise<TokensData> {
+  async SignIn(authSignInDto: AuthSignInDto): Promise<AuthData> {
     const { email, password } = authSignInDto;
     const user = await this.usersRepository.findByEmail(email);
 
     if (user && password && (await bcrypt.compare(password, user.password))) {
-      return this.generateTokens({ name: user.name, email: user.email });
+      const tokens = await this.generateTokens({
+        name: user.name,
+        email: user.email,
+      });
+
+      const userData = await this.usersRepository.formatUserData(user);
+      return { tokens, user: userData };
     } else {
       throw new UnauthorizedException("Please check your login credentials");
     }

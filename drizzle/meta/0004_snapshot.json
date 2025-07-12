@@ -1,6 +1,6 @@
 {
-  "id": "7401a7a8-37bf-4390-a013-f4bca19e42ff",
-  "prevId": "3e512ea2-65c4-42c0-993e-004554ac3bcd",
+  "id": "5c037b7d-0e29-4cdd-90af-fe4c59def1e5",
+  "prevId": "7401a7a8-37bf-4390-a013-f4bca19e42ff",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -31,13 +31,13 @@
           "name": "password",
           "type": "varchar(255)",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "picture": {
           "name": "picture",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "updated_at": {
           "name": "updated_at",
@@ -58,13 +58,6 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "users_name_unique": {
-          "name": "users_name_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "name"
-          ]
-        },
         "users_email_unique": {
           "name": "users_email_unique",
           "nullsNotDistinct": false,

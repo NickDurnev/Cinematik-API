@@ -1,17 +1,17 @@
 import { Body, Controller, Post } from "@nestjs/common";
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 
-import { ResponseCode, ResponseWrapper, TokensData } from "@/types";
+import { AuthData, ResponseCode, ResponseWrapper, TokensData } from "@/types";
 import { buildResponse } from "@/utils/response/response-wrapper";
 
 import {
   RefreshTokenApiBody,
   RefreshTokenApiResponse,
   SignInApiBody,
+  SignInApiResponse,
   SignUpApiBody,
   SignUpApiResponse,
   SocialLoginApiBody,
-  TokensApiResponse,
 } from "./auth.docs";
 import { AuthService } from "./auth.service";
 import {
@@ -31,28 +31,28 @@ export class AuthController {
   @ApiResponse(SignUpApiResponse)
   @ApiResponse({ status: 400, description: "Bad request - invalid user data" })
   @ApiResponse({ status: 409, description: "Conflict - user already exists" })
-  async signUp(@Body() authCredentialsDto: AuthCredentialsDto): Promise<ResponseWrapper<TokensData>> {
-    const tokens = await this.authService.SignUp(authCredentialsDto);
-    return buildResponse(tokens, ResponseCode.CREATED, "User signed up");  
+  async signUp(@Body() authCredentialsDto: AuthCredentialsDto): Promise<ResponseWrapper<AuthData>> {
+    const data = await this.authService.SignUp(authCredentialsDto);
+    return buildResponse(data, ResponseCode.CREATED, "User signed up");  
   }
 
   @Post('/signin')
   @ApiOperation({ summary: "Sign in existing user" })
   @ApiBody(SignInApiBody)
-  @ApiResponse(TokensApiResponse)
+  @ApiResponse(SignInApiResponse)
   @ApiResponse({ status: 400, description: "Bad request - invalid credentials" })
   @ApiResponse({ status: 401, description: "Unauthorized - invalid credentials" })
   async signIn(
     @Body() authSignInDto: AuthSignInDto,
-  ): Promise<ResponseWrapper<TokensData>> {
-    const tokens = await this.authService.SignIn(authSignInDto);
-    return buildResponse(tokens, ResponseCode.OK, "User signed in");  
+  ): Promise<ResponseWrapper<AuthData>> {
+    const data = await this.authService.SignIn(authSignInDto);
+    return buildResponse(data, ResponseCode.OK, "User signed in");  
   }
 
   @Post('/social-login')
   @ApiOperation({ summary: "Social login" })
   @ApiBody(SocialLoginApiBody)
-  @ApiResponse(TokensApiResponse)
+  @ApiResponse(SignInApiResponse)
   @ApiResponse({ 
     status: 400, 
     description: "Bad request - invalid data" 
@@ -63,9 +63,9 @@ export class AuthController {
   })
   async socialLogin(
     @Body() authSocialDto: AuthSocialDto,
-  ): Promise<ResponseWrapper<TokensData>> {
-    const tokens = await this.authService.socialLogin(authSocialDto);
-    return buildResponse(tokens, ResponseCode.OK, "User signed in");  
+  ): Promise<ResponseWrapper<AuthData>> {
+    const data = await this.authService.socialLogin(authSocialDto);
+    return buildResponse(data, ResponseCode.OK, "User signed in");  
   }
 
   @Post('/refresh')

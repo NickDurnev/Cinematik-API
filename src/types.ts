@@ -26,3 +26,16 @@ export type TokensData = {
   access_token_expires: number;
   refresh_token_expires: number;
 };
+
+export type UserData = {
+  id: string;
+  name: string;
+  email: string;
+  picture: string;
+  is_left_review: boolean;
+};
+
+export type AuthData = {
+  user: UserData;
+  tokens: TokensData;
+};

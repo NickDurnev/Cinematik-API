@@ -1,12 +1,10 @@
 // src/auth/auth.docs.ts
-
 import {
   AuthCredentialsDto,
   AuthSignInDto,
   AuthSocialDto,
 } from "./dto/auth-credentials.dto";
 
-// Common response schema for tokens
 export const TokensDataSchema = {
   type: "object",
   properties: {
@@ -14,6 +12,17 @@ export const TokensDataSchema = {
     access_token_expires: { type: "string" },
     refresh_token: { type: "string" },
     refresh_token_expires: { type: "string" },
+  },
+};
+
+export const UserDataSchema = {
+  type: "object",
+  properties: {
+    id: { type: "string" },
+    name: { type: "string" },
+    email: { type: "string" },
+    picture: { type: "string" },
+    is_left_review: { type: "boolean" },
   },
 };
 
@@ -65,13 +74,19 @@ export const RefreshTokenApiResponse = {
   },
 };
 
-export const TokensApiResponse = {
+export const SignInApiResponse = {
   status: 200,
   description: "User signed in successfully",
   schema: {
     type: "object",
     properties: {
-      data: TokensDataSchema,
+      data: {
+        type: "object",
+        properties: {
+          user: UserDataSchema,
+          tokens: TokensDataSchema,
+        },
+      },
       code: { type: "string" },
       message: { type: "string" },
     },
@@ -84,7 +99,13 @@ export const SignUpApiResponse = {
   schema: {
     type: "object",
     properties: {
-      data: TokensDataSchema,
+      data: {
+        type: "object",
+        properties: {
+          user: UserDataSchema,
+          tokens: TokensDataSchema,
+        },
+      },
       code: { type: "string" },
       message: { type: "string" },
     },
