@@ -27,6 +27,13 @@ import { ResponseCode, ResponseWrapper, ReviewWithUser } from "@/types";
 import { buildResponse } from "@/utils/response/response-wrapper";
 
 import { CreateReviewDto, GetReviewsDto } from "./dto";
+import {
+  CreateReviewApiBody,
+  CreateReviewApiResponse,
+  GetReviewsApiResponse,
+  UpdateReviewApiBody,
+  UpdateReviewApiResponse,
+} from "./reviews.docs";
 import ReviewsService from "./reviews.service";
 import { Review } from "./schema";
 
@@ -47,24 +54,7 @@ class ReviewsController {
     type: Number,
     description: "Page number",
   })
-  @ApiResponse({
-    status: 200,
-    description: "Reviews retrieved successfully",
-    schema: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          id: { type: 'string', format: 'uuid' },
-          user_id: { type: 'string', format: 'uuid' },
-          text: { type: 'string' },
-          rating: { type: 'string' },
-          created_at: { type: 'string', format: 'date-time' },
-          updated_at: { type: 'string', format: 'date-time' }
-        }
-      }
-    }
-  })
+  @ApiResponse(GetReviewsApiResponse)
   getReviews(
     @Query() getDto: GetReviewsDto,
     @GetUser() user: User,
@@ -79,32 +69,8 @@ class ReviewsController {
 
   @Post()
   @ApiOperation({ summary: "Create a new review" })
-  @ApiBody({
-    type: CreateReviewDto,
-    description: "Review data to create",
-  })
-  @ApiResponse({
-    status: 201,
-    description: "Review created successfully",
-    schema: {
-      type: 'object',
-      properties: {
-        data: {
-          type: 'object',
-          properties: {
-            id: { type: 'string', format: 'uuid' },
-            user_id: { type: 'string', format: 'uuid' },
-            text: { type: 'string' },
-            rating: { type: 'string' },
-            created_at: { type: 'string', format: 'date-time' },
-            updated_at: { type: 'string', format: 'date-time' }
-          }
-        },
-        code: { type: 'string' },
-        message: { type: 'string' }
-      }
-    }
-  })
+  @ApiBody(CreateReviewApiBody)
+  @ApiResponse(CreateReviewApiResponse)
   @ApiResponse({
     status: 400,
     description: "Bad request - invalid review data",
@@ -132,25 +98,8 @@ class ReviewsController {
     description: "Review ID to update",
     type: String,
   })
-  @ApiBody({
-    type: CreateReviewDto,
-    description: "Updated review data",
-  })
-  @ApiResponse({
-    status: 200,
-    description: "Review updated successfully",
-    schema: {
-      type: 'object',
-      properties: {
-        id: { type: 'string', format: 'uuid' },
-        user_id: { type: 'string', format: 'uuid' },
-        text: { type: 'string' },
-        rating: { type: 'string' },
-        created_at: { type: 'string', format: 'date-time' },
-        updated_at: { type: 'string', format: 'date-time' }
-      }
-    }
-  })
+  @ApiBody(UpdateReviewApiBody)
+  @ApiResponse(UpdateReviewApiResponse)
   @ApiResponse({
     status: 404,
     description: "Review not found",
@@ -187,9 +136,7 @@ class ReviewsController {
     @Param('id') id: string,
     @GetUser() user: User,
   ): Promise<void> {
-    this.logger.verbose(
-      `User "${user.name}" deleting review with ID: ${id}`,
-    );
+    this.logger.verbose(`User "${user.name}" deleting review with ID: ${id}`);
     return this.reviewsService.deleteReviewById(id);
   }
 }

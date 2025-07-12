@@ -6,9 +6,11 @@ import {
 } from "@nestjs/common";
 import { eq } from "drizzle-orm";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
+
 import { User, users } from "@/auth/schema";
 import { DATABASE_CONNECTION } from "@/database/database.connection";
-import {ReviewWithUser} from "@/types"
+import { ReviewWithUser } from "@/types";
+
 import { CreateReviewDto, GetReviewsDto, UpdateReviewDto } from "./dto";
 import { Review, reviews } from "./schema";
 
@@ -21,7 +23,10 @@ class ReviewsRepository {
 
   private logger = new Logger("ReviewRepository");
 
-  async getReviews(getDto: GetReviewsDto, user: User): Promise<ReviewWithUser[]> {
+  async getReviews(
+    getDto: GetReviewsDto,
+    user: User,
+  ): Promise<ReviewWithUser[]> {
     const { page } = getDto;
     const pageSize = 10; // Number of reviews per page
     const pageNumber = parseInt(page, 10) || 1;
@@ -120,13 +125,23 @@ class ReviewsRepository {
         .where(eq(reviews.id, reviewId))
         .returning();
 
-        return deletedReview;
-
+      return deletedReview;
     } catch (error) {
-      this.logger.error(
-        `Failed to delete review ${reviewId}`,
-        error.stack,
-      );
+      this.logger.error(`Failed to delete review ${reviewId}`, error.stack);
+      throw new InternalServerErrorException();
+    }
+  }
+
+  async getUserReviews(userId: string): Promise<Review> {
+    try {
+      const userReviews = await this.database
+        .select()
+        .from(reviews)
+        .where(eq(reviews.user_id, userId));
+
+      return userReviews[0] || null;
+    } catch (error) {
+      this.logger.error(`Failed to get user reviews ${userId}`, error.stack);
       throw new InternalServerErrorException();
     }
   }

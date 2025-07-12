@@ -8,7 +8,7 @@ import { eq } from "drizzle-orm";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
 
 import { DATABASE_CONNECTION } from "@/database/database.connection";
-import { Review, reviews } from "@/reviews/schema";
+import { reviews } from "@/reviews/schema";
 
 import { AuthCredentialsDto, AuthSocialDto } from "./dto/auth-credentials.dto";
 import { User, users } from "./schema";
@@ -72,21 +72,5 @@ export class UsersRepository {
       .from(users)
       .where(eq(users.email, email));
     return usersData[0] || null;
-  }
-
-  async formatUserData(user: User) {
-    const userReview = await this.database
-      .select()
-      .from(reviews)
-      .where(eq(reviews.user_id, user.id));
-
-    const userData = {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      picture: user.picture,
-      is_left_review: !!userReview[0],
-    };
-    return userData;
   }
 }

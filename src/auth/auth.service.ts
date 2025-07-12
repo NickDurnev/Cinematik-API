@@ -7,6 +7,7 @@ import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 import * as bcrypt from "bcrypt";
 
+import FormatDataService from "@/common/services/format-data.service";
 import { AuthData, TokensData } from "@/types";
 
 import {
@@ -23,6 +24,7 @@ export class AuthService {
     private usersRepository: UsersRepository,
     private jwtService: JwtService,
     private configService: ConfigService,
+    private formatDataService: FormatDataService,
   ) {}
 
   async SignUp(authCredentialsDto: AuthCredentialsDto): Promise<AuthData> {
@@ -43,7 +45,7 @@ export class AuthService {
         email: user.email,
       });
 
-      const userData = await this.usersRepository.formatUserData(user);
+      const userData = await this.formatDataService.formatUserData(user);
       return { tokens, user: userData };
     }
 
@@ -67,7 +69,7 @@ export class AuthService {
       email: user.email,
     });
 
-    const userData = await this.usersRepository.formatUserData(user);
+    const userData = await this.formatDataService.formatUserData(user);
     return { tokens, user: userData };
   }
 
@@ -81,7 +83,7 @@ export class AuthService {
         email: user.email,
       });
 
-      const userData = await this.usersRepository.formatUserData(user);
+      const userData = await this.formatDataService.formatUserData(user);
       return { tokens, user: userData };
     } else {
       throw new UnauthorizedException("Please check your login credentials");

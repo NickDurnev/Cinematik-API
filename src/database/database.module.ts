@@ -8,4 +8,4 @@ import { DrizzleProvider } from "./drizzle.provider";
   providers: [DrizzleProvider],
   exports: [DATABASE_CONNECTION],
 })
-export class DatabaseModule {}
+export default class DatabaseModule {}
