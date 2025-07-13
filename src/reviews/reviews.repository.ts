@@ -25,7 +25,6 @@ class ReviewsRepository {
 
   async getReviews(
     getDto: GetReviewsDto,
-    user: User,
   ): Promise<ReviewWithUser[]> {
     const { page } = getDto;
     const pageSize = 10; // Number of reviews per page
@@ -46,16 +45,13 @@ class ReviewsRepository {
         })
         .from(reviews)
         .innerJoin(users, eq(reviews.user_id, users.id))
-        .where(eq(reviews.user_id, user.id))
         .limit(pageSize)
         .offset(offsetValue);
 
       return userReviews;
     } catch (error) {
       this.logger.error(
-        `Failed to get reviews for user "${
-          user.name
-        }". GetDto: ${JSON.stringify(getDto)}`,
+        `Failed to get reviews". GetDto: ${JSON.stringify(getDto)}`,
         error.stack,
       );
       throw new InternalServerErrorException();
@@ -88,8 +84,8 @@ class ReviewsRepository {
     }
   }
 
-  async updateReviewById(
-    reviewId: string,
+  async updateReview(
+    userId: string,
     updateReviewDto: UpdateReviewDto,
   ): Promise<Review> {
     const { text, rating } = updateReviewDto;
@@ -101,7 +97,7 @@ class ReviewsRepository {
           ...(text && { text }),
           ...(rating && { rating }),
         })
-        .where(eq(reviews.id, reviewId))
+        .where(eq(reviews.user_id, userId))
         .returning();
 
       if (!updatedReview) {
@@ -111,23 +107,23 @@ class ReviewsRepository {
       return updatedReview;
     } catch (error) {
       this.logger.error(
-        `Failed to update review ${reviewId}. UpdateDto: ${JSON.stringify(updateReviewDto)}`,
+        `Failed to update review. UpdateDto: ${JSON.stringify(updateReviewDto)}`,
         error.stack,
       );
       throw new InternalServerErrorException();
     }
   }
 
-  async deleteReview(reviewId: string): Promise<Review> {
+  async deleteReview(userId: string): Promise<Review> {
     try {
       const [deletedReview] = await this.database
         .delete(reviews)
-        .where(eq(reviews.id, reviewId))
+        .where(eq(reviews.user_id, userId))
         .returning();
 
       return deletedReview;
     } catch (error) {
-      this.logger.error(`Failed to delete review ${reviewId}`, error.stack);
+      this.logger.error("Failed to delete review", error.stack);
       throw new InternalServerErrorException();
     }
   }

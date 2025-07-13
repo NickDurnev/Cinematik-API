@@ -37,7 +37,6 @@ import {
 import ReviewsService from "./reviews.service";
 import { Review } from "./schema";
 
-@ApiBearerAuth()
 @ApiTags("Reviews")
 @Controller("reviews")
 @UseGuards(AuthGuard())
@@ -51,22 +50,17 @@ class ReviewsController {
   @ApiQuery({
     name: "page",
     required: true,
-    type: Number,
+    type: String,
     description: "Page number",
   })
   @ApiResponse(GetReviewsApiResponse)
   getReviews(
     @Query() getDto: GetReviewsDto,
-    @GetUser() user: User,
   ): Promise<ReviewWithUser[]> {
-    this.logger.verbose(
-      `User "${user.name}" retrieving all reviews. GET: ${JSON.stringify(
-        getDto,
-      )}`,
-    );
-    return this.reviewsService.getReviews(getDto, user);
+    return this.reviewsService.getReviews(getDto);
   }
 
+  @ApiBearerAuth()
   @Post()
   @ApiOperation({ summary: "Create a new review" })
   @ApiBody(CreateReviewApiBody)
@@ -91,7 +85,8 @@ class ReviewsController {
     return buildResponse(review, ResponseCode.CREATED, "Review created");
   }
 
-  @Patch("/:id")
+  @ApiBearerAuth()
+  @Patch()
   @ApiOperation({ summary: "Update a review" })
   @ApiParam({
     name: "id",
@@ -105,19 +100,19 @@ class ReviewsController {
     description: "Review not found",
   })
   updateReviewById(
-    @Param('id') id: string,
     @Body() updateReviewDto: CreateReviewDto,
     @GetUser() user: User,
   ): Promise<Review> {
     this.logger.verbose(
-      `User "${user.name}" updating review with ID: ${id}. Data: ${JSON.stringify(
+      `User "${user.name}" updating review. Data: ${JSON.stringify(
         updateReviewDto,
       )}`,
     );
-    return this.reviewsService.updateReviewById(id, updateReviewDto);
+    return this.reviewsService.updateReview(user.id, updateReviewDto);
   }
 
-  @Delete("/:id")
+  @ApiBearerAuth()
+  @Delete()
   @ApiOperation({ summary: "Delete a review" })
   @ApiParam({
     name: "id",
@@ -133,11 +128,10 @@ class ReviewsController {
     description: "Review not found",
   })
   deleteReviewById(
-    @Param('id') id: string,
     @GetUser() user: User,
-  ): Promise<void> {
-    this.logger.verbose(`User "${user.name}" deleting review with ID: ${id}`);
-    return this.reviewsService.deleteReviewById(id);
+  ): Promise<Review> {
+    this.logger.verbose(`User "${user.name}" deleting review`);
+    return this.reviewsService.deleteReview(user.id);
   }
 }
 
