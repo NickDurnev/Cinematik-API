@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 
 import { User } from "@/auth/schema";
-import { ReviewWithUser } from "@/types";
+import { PageMetaData, ReviewWithUser } from "@/types";
 
 import { CreateReviewDto, GetReviewsDto } from "./dto";
 import ReviewsRepository from "./reviews.repository";
@@ -11,7 +11,9 @@ import { Review } from "./schema";
 class ReviewsService {
   constructor(private reviewsRepository: ReviewsRepository) {}
 
-  getReviews(getDto: GetReviewsDto): Promise<ReviewWithUser[]> {
+  getReviews(
+    getDto: GetReviewsDto,
+  ): Promise<{ data: ReviewWithUser[]; meta: PageMetaData }> {
     return this.reviewsRepository.getReviews(getDto);
   }
 

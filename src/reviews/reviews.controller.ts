@@ -23,7 +23,7 @@ import {
 
 import { GetUser } from "@/auth/get-user.decorator";
 import { User } from "@/auth/schema";
-import { ResponseCode, ResponseWrapper, ReviewWithUser } from "@/types";
+import { PageMetaData, ResponseCode, ResponseWrapper, ReviewWithUser } from "@/types";
 import { buildResponse } from "@/utils/response/response-wrapper";
 
 import { CreateReviewDto, GetReviewsDto } from "./dto";
@@ -39,7 +39,6 @@ import { Review } from "./schema";
 
 @ApiTags("Reviews")
 @Controller("reviews")
-@UseGuards(AuthGuard())
 class ReviewsController {
   private logger = new Logger("ReviewsController");
 
@@ -54,10 +53,11 @@ class ReviewsController {
     description: "Page number",
   })
   @ApiResponse(GetReviewsApiResponse)
-  getReviews(
+  async getReviews(
     @Query() getDto: GetReviewsDto,
-  ): Promise<ReviewWithUser[]> {
-    return this.reviewsService.getReviews(getDto);
+  ): Promise<ResponseWrapper<Review[]>> {
+    const {data, meta} = await this.reviewsService.getReviews(getDto);
+    return buildResponse({data, meta});
   }
 
   @ApiBearerAuth()
@@ -78,11 +78,11 @@ class ReviewsController {
         createReviewDto,
       )}`,
     );
-    const review = await this.reviewsService.createReview(
+    const data = await this.reviewsService.createReview(
       createReviewDto,
       user,
     );
-    return buildResponse(review, ResponseCode.CREATED, "Review created");
+    return buildResponse({data, code: ResponseCode.CREATED, message: "Review created"});
   }
 
   @ApiBearerAuth()

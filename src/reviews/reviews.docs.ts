@@ -60,6 +60,15 @@ export const GetReviewsApiResponse = {
       },
       code: { type: "string" },
       message: { type: "string" },
+      meta: {
+        type: "object",
+        properties: {
+          page: { type: "number" },
+          limit: { type: "number" },
+          total: { type: "number" },
+          total_pages: { type: "number" },
+        },
+      },
     },
   },
 };

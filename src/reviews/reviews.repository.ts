@@ -4,12 +4,12 @@ import {
   InternalServerErrorException,
   Logger,
 } from "@nestjs/common";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
 
 import { User, users } from "@/auth/schema";
 import { DATABASE_CONNECTION } from "@/database/database.connection";
-import { ReviewWithUser } from "@/types";
+import { PageMetaData, ReviewWithUser } from "@/types";
 
 import { CreateReviewDto, GetReviewsDto, UpdateReviewDto } from "./dto";
 import { Review, reviews } from "./schema";
@@ -25,21 +25,22 @@ class ReviewsRepository {
 
   async getReviews(
     getDto: GetReviewsDto,
-  ): Promise<ReviewWithUser[]> {
+  ): Promise<{ data: ReviewWithUser[]; meta: PageMetaData }> {
     const { page } = getDto;
-    const pageSize = 10; // Number of reviews per page
+    const pageSize = 10;
     const pageNumber = parseInt(page, 10) || 1;
     const offsetValue = (pageNumber - 1) * pageSize;
 
     try {
+      // 1. Get paginated reviews
       const userReviews = await this.database
         .select({
           id: reviews.id,
           user_id: reviews.user_id,
           text: reviews.text,
           rating: reviews.rating,
-          createdAt: reviews.createdAt,
-          updatedAt: reviews.updatedAt,
+          created_at: reviews.created_at,
+          updated_at: reviews.updated_at,
           name: users.name,
           picture: users.picture,
         })
@@ -48,7 +49,24 @@ class ReviewsRepository {
         .limit(pageSize)
         .offset(offsetValue);
 
-      return userReviews;
+      // 2. Get total count
+      const [{ count }] = await this.database
+        .select({ count: sql<number>`count(*)` })
+        .from(reviews);
+
+      // 3. Build meta
+      const total = Number(count);
+      const totalPages = Math.ceil(total / pageSize);
+
+      return {
+        data: userReviews,
+        meta: {
+          total,
+          page: pageNumber,
+          limit: pageSize,
+          total_pages: totalPages,
+        },
+      };
     } catch (error) {
       this.logger.error(
         `Failed to get reviews". GetDto: ${JSON.stringify(getDto)}`,

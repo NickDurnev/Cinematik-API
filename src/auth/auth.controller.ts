@@ -33,7 +33,7 @@ export class AuthController {
   @ApiResponse({ status: 409, description: "Conflict - user already exists" })
   async signUp(@Body() authCredentialsDto: AuthCredentialsDto): Promise<ResponseWrapper<AuthData>> {
     const data = await this.authService.SignUp(authCredentialsDto);
-    return buildResponse(data, ResponseCode.CREATED, "User signed up");  
+    return buildResponse({data, code: ResponseCode.CREATED, message: "User signed up"});  
   }
 
   @Post('/signin')
@@ -46,7 +46,7 @@ export class AuthController {
     @Body() authSignInDto: AuthSignInDto,
   ): Promise<ResponseWrapper<AuthData>> {
     const data = await this.authService.SignIn(authSignInDto);
-    return buildResponse(data, ResponseCode.OK, "User signed in");  
+    return buildResponse({data,code: ResponseCode.OK, message: "User signed in"});  
   }
 
   @Post('/social-login')
@@ -65,7 +65,7 @@ export class AuthController {
     @Body() authSocialDto: AuthSocialDto,
   ): Promise<ResponseWrapper<AuthData>> {
     const data = await this.authService.socialLogin(authSocialDto);
-    return buildResponse(data, ResponseCode.OK, "User signed in");  
+    return buildResponse({data, code:ResponseCode.OK, message:"User signed in"});  
   }
 
   @Post('/refresh')
@@ -83,7 +83,7 @@ export class AuthController {
   async refresh(
     @Body('refreshToken') refreshToken: string,
   ): Promise<ResponseWrapper<Pick<TokensData, "access_token" | "access_token_expires">>> {
-    const tokens = await this.authService.refreshAccessToken(refreshToken);
-    return buildResponse(tokens, ResponseCode.OK, "Access token refreshed");
+    const data = await this.authService.refreshAccessToken(refreshToken);
+    return buildResponse({data, code:ResponseCode.OK, message:"Access token refreshed"});
   }
 }

@@ -3,6 +3,13 @@ import { Review } from "@/reviews/schema";
 
 export type ReviewWithUser = Review & Pick<User, "name" | "picture">;
 
+export type PageMetaData = {
+  total: number;
+  page: number;
+  limit: number;
+  total_pages: number;
+};
+
 export type ResponseStatus = "success" | "error";
 
 export enum ResponseCode {
@@ -18,6 +25,7 @@ export interface ResponseWrapper<T> {
   code: ResponseCode;
   message: string;
   status: ResponseStatus;
+  meta?: PageMetaData;
 }
 
 export type TokensData = {

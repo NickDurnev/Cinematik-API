@@ -57,9 +57,14 @@ class ResponseExceptionFilter implements ExceptionFilter {
       message = exception.message;
     }
 
-    response
-      .status(status)
-      .json(buildResponse(null, code, message, "error" as ResponseStatus));
+    response.status(status).json(
+      buildResponse({
+        data: null,
+        code,
+        message,
+        status: "error" as ResponseStatus,
+      }),
+    );
   }
 }
 
