@@ -4,7 +4,6 @@ import {
   Delete,
   Get,
   Logger,
-  Param,
   Patch,
   Post,
   Query,
@@ -15,7 +14,6 @@ import {
   ApiBearerAuth,
   ApiBody,
   ApiOperation,
-  ApiParam,
   ApiQuery,
   ApiResponse,
   ApiTags,
@@ -23,7 +21,7 @@ import {
 
 import { GetUser } from "@/auth/get-user.decorator";
 import { User } from "@/auth/schema";
-import { PageMetaData, ResponseCode, ResponseWrapper, ReviewWithUser } from "@/types";
+import { ResponseCode, ResponseWrapper } from "@/types";
 import { buildResponse } from "@/utils/response/response-wrapper";
 
 import { CreateReviewDto, GetReviewsDto } from "./dto";
@@ -62,6 +60,7 @@ class ReviewsController {
 
   @ApiBearerAuth()
   @Post()
+  @UseGuards(AuthGuard())
   @ApiOperation({ summary: "Create a new review" })
   @ApiBody(CreateReviewApiBody)
   @ApiResponse(CreateReviewApiResponse)
@@ -78,21 +77,18 @@ class ReviewsController {
         createReviewDto,
       )}`,
     );
-    const data = await this.reviewsService.createReview(
-      createReviewDto,
-      user,
-    );
-    return buildResponse({data, code: ResponseCode.CREATED, message: "Review created"});
+    const data = await this.reviewsService.createReview(createReviewDto, user);
+    return buildResponse({
+      data,
+      code: ResponseCode.CREATED,
+      message: "Review created",
+    });
   }
 
   @ApiBearerAuth()
   @Patch()
+  @UseGuards(AuthGuard())
   @ApiOperation({ summary: "Update a review" })
-  @ApiParam({
-    name: "id",
-    description: "Review ID to update",
-    type: String,
-  })
   @ApiBody(UpdateReviewApiBody)
   @ApiResponse(UpdateReviewApiResponse)
   @ApiResponse({
@@ -113,12 +109,8 @@ class ReviewsController {
 
   @ApiBearerAuth()
   @Delete()
+  @UseGuards(AuthGuard())
   @ApiOperation({ summary: "Delete a review" })
-  @ApiParam({
-    name: "id",
-    description: "Review ID to delete",
-    type: String,
-  })
   @ApiResponse({
     status: 200,
     description: "Review deleted successfully",
@@ -130,6 +122,8 @@ class ReviewsController {
   deleteReviewById(
     @GetUser() user: User,
   ): Promise<Review> {
+    console.log('user:', user);
+    console.log(123);
     this.logger.verbose(`User "${user.name}" deleting review`);
     return this.reviewsService.deleteReview(user.id);
   }
