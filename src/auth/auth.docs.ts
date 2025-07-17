@@ -50,7 +50,7 @@ export const RefreshTokenApiBody = {
         description: "Refresh token to generate new access token",
       },
     },
-    required: ["refreshToken"],
+    required: ["refresh_token"],
   },
   description: "Refresh token data",
 };

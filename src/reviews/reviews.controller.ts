@@ -53,8 +53,9 @@ class ReviewsController {
   @ApiResponse(GetReviewsApiResponse)
   async getReviews(
     @Query() getDto: GetReviewsDto,
+    @GetUser() user: User,
   ): Promise<ResponseWrapper<Review[]>> {
-    const {data, meta} = await this.reviewsService.getReviews(getDto);
+    const {data, meta} = await this.reviewsService.getReviews(getDto, user ?? null);
     return buildResponse({data, meta});
   }
 

@@ -81,7 +81,7 @@ export class AuthController {
     description: "Unauthorized - invalid or expired refresh token" 
   })
   async refresh(
-    @Body('refreshToken') refreshToken: string,
+    @Body('refresh_token') refreshToken: string,
   ): Promise<ResponseWrapper<Pick<TokensData, "access_token" | "access_token_expires">>> {
     const data = await this.authService.refreshAccessToken(refreshToken);
     return buildResponse({data, code:ResponseCode.OK, message:"Access token refreshed"});

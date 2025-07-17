@@ -99,11 +99,11 @@ export class AuthService {
       });
 
       // Return time remaining in seconds
-      const accessTokenExpires = 15 * 60; // 15 minutes in seconds
+      const accessTokenExpires = 60 * 60; // 60 minutes in seconds
 
       const accessToken: string = await this.jwtService.sign(
         { name: payload.name, email: payload.email },
-        { expiresIn: "15m" },
+        { expiresIn: "1m" },
       );
       return {
         access_token: accessToken,
@@ -116,11 +116,11 @@ export class AuthService {
 
   generateTokens = async (payload: JwtPayload): Promise<TokensData> => {
     // Return time remaining in seconds
-    const accessTokenExpires = 15 * 60; // 15 minutes in seconds
+    const accessTokenExpires = 60 * 60; // 60 minutes in seconds
     const refreshTokenExpires = 7 * 24 * 60 * 60; // 7 days in seconds
 
     const accessToken: string = await this.jwtService.sign(payload, {
-      expiresIn: "15m",
+      expiresIn: "1m",
       secret: this.configService.get("JWT_SECRET"),
     });
     const refreshToken: string = await this.jwtService.sign(payload, {

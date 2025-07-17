@@ -25,6 +25,7 @@ class ReviewsRepository {
 
   async getReviews(
     getDto: GetReviewsDto,
+    user: User | null,
   ): Promise<{ data: ReviewWithUser[]; meta: PageMetaData }> {
     const { page } = getDto;
     const pageSize = 10;
@@ -32,8 +33,31 @@ class ReviewsRepository {
     const offsetValue = (pageNumber - 1) * pageSize;
 
     try {
-      // 1. Get paginated reviews
-      const userReviews = await this.database
+      let userReview: ReviewWithUser | null = null;
+      let reviewsList: ReviewWithUser[] = [];
+      let total = 0;
+
+      // 1. If user, fetch their review
+      if (user) {
+        const [foundUserReview] = await this.database
+          .select({
+            id: reviews.id,
+            user_id: reviews.user_id,
+            text: reviews.text,
+            rating: reviews.rating,
+            created_at: reviews.created_at,
+            updated_at: reviews.updated_at,
+            name: users.name,
+            picture: users.picture,
+          })
+          .from(reviews)
+          .innerJoin(users, eq(reviews.user_id, users.id))
+          .where(eq(reviews.user_id, user.id));
+        userReview = foundUserReview || null;
+      }
+
+      // 2. Build query for other reviews (exclude user's review if user exists)
+      const baseQuery = this.database
         .select({
           id: reviews.id,
           user_id: reviews.user_id,
@@ -45,21 +69,50 @@ class ReviewsRepository {
           picture: users.picture,
         })
         .from(reviews)
-        .innerJoin(users, eq(reviews.user_id, users.id))
-        .limit(pageSize)
-        .offset(offsetValue);
+        .innerJoin(users, eq(reviews.user_id, users.id));
 
-      // 2. Get total count
-      const [{ count }] = await this.database
+      // 3. Get total count (excluding user's review if user exists)
+      const countQuery = this.database
         .select({ count: sql<number>`count(*)` })
         .from(reviews);
+      let countResult;
+      if (user) {
+        countResult = await countQuery.where(sql`user_id <> ${user.id}`);
+      } else {
+        countResult = await countQuery;
+      }
+      total = Number(countResult[0].count);
 
-      // 3. Build meta
-      const total = Number(count);
+      // 4. Fetch paginated reviews (excluding user's review if user exists)
+      if (user && pageNumber === 1) {
+        reviewsList = await baseQuery
+          .where(sql`user_id <> ${user.id}`)
+          .limit(pageSize - 1)
+          .offset(0);
+      } else if (user) {
+        reviewsList = await baseQuery
+          .where(sql`user_id <> ${user.id}`)
+          .limit(pageSize)
+          .offset(offsetValue - 1 >= 0 ? offsetValue - 1 : 0);
+      } else {
+        reviewsList = await baseQuery
+          .limit(pageSize)
+          .offset(offsetValue);
+      }
+
+      // 5. If userReview exists and page 1, prepend it
+      let finalReviews: ReviewWithUser[] = [];
+      if (userReview && pageNumber === 1) {
+        finalReviews = [userReview, ...reviewsList];
+        total += 1;
+      } else {
+        finalReviews = reviewsList;
+      }
+
       const totalPages = Math.ceil(total / pageSize);
 
       return {
-        data: userReviews,
+        data: finalReviews,
         meta: {
           total,
           page: pageNumber,

@@ -5,8 +5,8 @@ import { timestamps } from "@/utils/columns";
 export const reviews = pgTable("reviews", {
   id: uuid("id").primaryKey().defaultRandom(),
   user_id: uuid("user_id").references(() => users.id),
-  text: text("text").notNull().unique(),
-  rating: varchar("rating", { length: 5 }).notNull().unique(),
+  text: text("text").notNull(),
+  rating: varchar("rating", { length: 5 }).notNull(),
   ...timestamps,
 });
 

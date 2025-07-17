@@ -13,8 +13,9 @@ class ReviewsService {
 
   getReviews(
     getDto: GetReviewsDto,
+    user: User | null,
   ): Promise<{ data: ReviewWithUser[]; meta: PageMetaData }> {
-    return this.reviewsRepository.getReviews(getDto);
+    return this.reviewsRepository.getReviews(getDto, user);
   }
 
   createReview(CreateReviewDto: CreateReviewDto, user: User): Promise<Review> {
