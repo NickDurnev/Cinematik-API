@@ -103,7 +103,7 @@ export class AuthService {
 
       const accessToken: string = await this.jwtService.sign(
         { name: payload.name, email: payload.email },
-        { expiresIn: "1m" },
+        { expiresIn: "60m" },
       );
       return {
         access_token: accessToken,
@@ -120,7 +120,7 @@ export class AuthService {
     const refreshTokenExpires = 7 * 24 * 60 * 60; // 7 days in seconds
 
     const accessToken: string = await this.jwtService.sign(payload, {
-      expiresIn: "1m",
+      expiresIn: "60m",
       secret: this.configService.get("JWT_SECRET"),
     });
     const refreshToken: string = await this.jwtService.sign(payload, {
