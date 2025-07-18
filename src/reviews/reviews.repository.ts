@@ -27,6 +27,7 @@ class ReviewsRepository {
     getDto: GetReviewsDto,
     user: User | null,
   ): Promise<{ data: ReviewWithUser[]; meta: PageMetaData }> {
+    console.log('🚀 ~ ReviewsRepository ~ user:', user)
     const { page } = getDto;
     const pageSize = 10;
     const pageNumber = parseInt(page, 10) || 1;

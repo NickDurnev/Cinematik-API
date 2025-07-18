@@ -20,6 +20,7 @@ import {
 } from "@nestjs/swagger";
 
 import { GetUser } from "@/auth/get-user.decorator";
+import OptionalAuthGuard from "@/auth/optional-auth-guard";
 import { User } from "@/auth/schema";
 import { ResponseCode, ResponseWrapper } from "@/types";
 import { buildResponse } from "@/utils/response/response-wrapper";
@@ -43,6 +44,7 @@ class ReviewsController {
   constructor(private reviewsService: ReviewsService) {}
 
   @Get()
+  @UseGuards(OptionalAuthGuard)
   @ApiOperation({ summary: "Get all reviews" })
   @ApiQuery({
     name: "page",
@@ -55,8 +57,11 @@ class ReviewsController {
     @Query() getDto: GetReviewsDto,
     @GetUser() user: User,
   ): Promise<ResponseWrapper<Review[]>> {
-    const {data, meta} = await this.reviewsService.getReviews(getDto, user ?? null);
-    return buildResponse({data, meta});
+    const { data, meta } = await this.reviewsService.getReviews(
+      getDto,
+      user ?? null,
+    );
+    return buildResponse({ data, meta });
   }
 
   @ApiBearerAuth()
