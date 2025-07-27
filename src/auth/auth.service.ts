@@ -16,7 +16,7 @@ import {
   AuthSocialDto,
 } from "./dto/auth-credentials.dto";
 import { JwtPayload } from "./jwt-payload.interface";
-import { UsersRepository } from "./user.repository";
+import UsersRepository from "./user.repository";
 
 @Injectable()
 export class AuthService {
