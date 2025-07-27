@@ -34,15 +34,3 @@ export class AuthSignInDto {
   @IsPassword()
   password: string;
 }
-
-export class ForgotPasswordDto {
-  @IsEmail()
-  email: string;
-}
-
-export class ResetPasswordDto {
-  token: string;
-  
-  @IsPassword()
-  newPassword: string;
-}

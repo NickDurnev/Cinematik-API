@@ -5,6 +5,7 @@ import {
   Get,
   Logger,
   Patch,
+  Post,
   UseGuards,
 } from "@nestjs/common";
 import { AuthGuard } from "@nestjs/passport";
@@ -18,11 +19,16 @@ import {
 
 import { GetUser } from "@/auth/get-user.decorator";
 import { User } from "@/auth/schema";
-import { UserData } from "@/types";
+import { ResponseCode, ResponseWrapper, UserData } from "@/types";
+import { buildResponse } from "@/utils/response/response-wrapper";
 
-import { UpdateProfileDto } from "./dto";
+import { ForgotPasswordDto, ResetPasswordDto, UpdateProfileDto } from "./dto";
 import {
+  ForgotPasswordApiResponse,
+  ForgotPasswordBody,
   GetProfileApiResponse,
+  ResetPasswordApiResponse,
+  ResetPasswordBody,
   UpdateProfileApiBody,
   UpdateProfileApiResponse,
 } from "./profile.docs";
@@ -84,6 +90,31 @@ class ProfileController {
   ): Promise<void> {
     this.logger.verbose(`User "${user.name}" deleting profile`);
     return this.profilesService.deleteProfile(user.id);
+  }
+
+  @Post('/forgot-password')
+  @ApiOperation({ summary: "Request password reset email" })
+  @ApiBody(ForgotPasswordBody)
+  @ApiResponse(ForgotPasswordApiResponse)
+  @ApiResponse({ status: 400, description: "Bad request - invalid email" })
+  async forgotPassword(
+    @Body() forgotPasswordDto: ForgotPasswordDto,
+  ): Promise<ResponseWrapper<{ success: boolean; message: string }>> {
+    const data = await this.profilesService.forgotPassword(forgotPasswordDto.email);
+    return buildResponse({ data, code: ResponseCode.OK, message: data.message });
+  }
+
+  @Post('/reset-password')
+  @ApiOperation({ summary: "Reset password using token" })
+  @ApiBody(ResetPasswordBody)
+  @ApiResponse(ResetPasswordApiResponse)
+  @ApiResponse({ status: 400, description: "Bad request - invalid data" })
+  @ApiResponse({ status: 404, description: "Not found - invalid or expired token" })
+  async resetPassword(
+    @Body() resetPasswordDto: ResetPasswordDto,
+  ): Promise<ResponseWrapper<{ success: boolean; message: string }>> {
+    const data = await this.profilesService.resetPassword(resetPasswordDto.token, resetPasswordDto.newPassword);
+    return buildResponse({ data, code: ResponseCode.OK, message: data.message });
   }
 }
 

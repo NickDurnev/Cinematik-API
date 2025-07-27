@@ -1,1 +1,5 @@
-export { default as UpdateProfileDto } from "./update-profile.dto";
+export {
+  ForgotPasswordDto,
+  ResetPasswordDto,
+  UpdateProfileDto,
+} from "./profile.dto";

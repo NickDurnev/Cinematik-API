@@ -111,5 +111,3 @@ export const SignUpApiResponse = {
     },
   },
 };
-
-// ...add other shared docs objects as needed

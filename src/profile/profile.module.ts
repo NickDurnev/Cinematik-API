@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 
 import AuthModule from "@/auth/auth.module";
 import { CommonModule } from "@/common/common.module";
+import EmailService from "@/common/services/email.service";
 import DatabaseModule from "@/database/database.module";
 
 import ProfileController from "./profile.controller";
@@ -11,7 +12,7 @@ import ProfilesService from "./profile.service";
 @Module({
   imports: [AuthModule, DatabaseModule, CommonModule],
   controllers: [ProfileController],
-  providers: [ProfilesService, ProfilesRepository],
+  providers: [ProfilesService, ProfilesRepository, EmailService],
   exports: [ProfilesRepository],
 })
 export default class ReviewsModule {}
