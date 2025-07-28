@@ -7,7 +7,9 @@
   "license": "UNLICENSED",
   "scripts": {
     "build": "nest build",
+    "postbuild": "npm run copy:templates",
     "start": "STAGE=prod nest start",
+    "copy:templates": "copyfiles -u 1 \"src/common/templates/**/*\" dist/src",
     "start:dev": "STAGE=dev nest start --watch",
     "start:debug": "STAGE=dev nest start --debug --watch",
     "start:prod": "STAGE=prod node dist/main",
@@ -36,6 +38,7 @@
     "bcrypt": "^6.0.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",
+    "copyfiles": "^2.4.1",
     "drizzle-kit": "^0.31.1",
     "drizzle-orm": "^0.44.2",
     "handlebars": "^4.7.8",

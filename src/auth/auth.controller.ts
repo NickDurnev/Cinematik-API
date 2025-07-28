@@ -1,13 +1,16 @@
 import { Body, Controller, Post } from "@nestjs/common";
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 
-import EmailService from "@/common/services/email.service";
 import { AuthData, ResponseCode, ResponseWrapper, TokensData } from "@/types";
 import { buildResponse } from "@/utils/response/response-wrapper";
 
 import {
+  ForgotPasswordApiResponse,
+  ForgotPasswordBody,
   RefreshTokenApiBody,
   RefreshTokenApiResponse,
+  ResetPasswordApiResponse,
+  ResetPasswordBody,
   SignInApiBody,
   SignInApiResponse,
   SignUpApiBody,
@@ -19,15 +22,14 @@ import {
   AuthCredentialsDto,
   AuthSignInDto,
   AuthSocialDto,
+  ForgotPasswordDto,
+  ResetPasswordDto,
 } from "./dto/auth-credentials.dto";
 
 @ApiTags("Authentication")
 @Controller("auth")
 export class AuthController {
-  constructor(
-    private authService: AuthService,
-    private emailService: EmailService,
-  ) {}
+  constructor(private authService: AuthService) {}
 
   @Post('/signup')
   @ApiOperation({ summary: "Sign up new user" })
@@ -84,5 +86,30 @@ export class AuthController {
   ): Promise<ResponseWrapper<Pick<TokensData, "access_token" | "access_token_expires">>> {
     const data = await this.authService.refreshAccessToken(refreshToken);
     return buildResponse({data, code:ResponseCode.OK, message:"Access token refreshed"});
+  }
+
+  @Post('/forgot-password')
+  @ApiOperation({ summary: "Request password reset email" })
+  @ApiBody(ForgotPasswordBody)
+  @ApiResponse(ForgotPasswordApiResponse)
+  @ApiResponse({ status: 400, description: "Bad request - invalid email" })
+  async forgotPassword(
+    @Body() forgotPasswordDto: ForgotPasswordDto,
+  ): Promise<ResponseWrapper<{ success: boolean; message: string }>> {
+    const data = await this.authService.forgotPassword(forgotPasswordDto.email);
+    return buildResponse({ data, code: ResponseCode.OK, message: data.message });
+  }
+
+  @Post('/reset-password')
+  @ApiOperation({ summary: "Reset password using token" })
+  @ApiBody(ResetPasswordBody)
+  @ApiResponse(ResetPasswordApiResponse)
+  @ApiResponse({ status: 400, description: "Bad request - invalid data" })
+  @ApiResponse({ status: 404, description: "Not found - invalid or expired token" })
+  async resetPassword(
+    @Body() resetPasswordDto: ResetPasswordDto,
+  ): Promise<ResponseWrapper<{ success: boolean; message: string }>> {
+    const data = await this.authService.resetPassword(resetPasswordDto.token, resetPasswordDto.newPassword);
+    return buildResponse({ data, code: ResponseCode.OK, message: data.message });
   }
 }

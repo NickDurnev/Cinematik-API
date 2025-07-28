@@ -1,5 +1,1 @@
-export {
-  ForgotPasswordDto,
-  ResetPasswordDto,
-  UpdateProfileDto,
-} from "./profile.dto";
+export { UpdateProfileDto } from "./profile.dto";

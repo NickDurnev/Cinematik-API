@@ -2,25 +2,31 @@ import { readFileSync } from "fs";
 import { join } from "path";
 
 import { Injectable } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import Handlebars from "handlebars";
 import { CreateEmailResponse, Resend } from "resend";
 
 import { User } from "@/auth/schema";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 @Injectable()
 export class EmailService {
   private forgotPasswordTemplate: Handlebars.TemplateDelegate;
 
-  constructor() {
+  constructor(private configService: ConfigService) {
+    const isProd = this.configService.get("STAGE") === "prod";
+    console.log("🚀 ~ isProd:", isProd);
+
+    const templatesDir = isProd
+      ? join(__dirname, "common/templates")
+      : join(process.cwd(), "src/common/templates");
+
     // Load and compile the HTML templates once at service initialization
     const templateSource = readFileSync(
-      join(__dirname, "templates/forgot-password-email.html"),
+      join(templatesDir, "forgot-password-email.html"),
       "utf8",
     );
     const stylesSource = readFileSync(
-      join(__dirname, "templates/email-styles.hbs"),
+      join(templatesDir, "email-styles.hbs"),
       "utf8",
     );
     Handlebars.registerPartial("styles", stylesSource);
@@ -37,9 +43,11 @@ export class EmailService {
       resetLink,
     });
 
+    const resend = new Resend(this.configService.get("RESEND_API_KEY"));
+
     // Send email using Resend
     return await resend.emails.send({
-      from: "Cinematik <noreply@cinematik.com>",
+      from: "Cinematik <noreply@bomberman.click>",
       to: [user.email],
       subject: "Reset Your Password - Cinematik",
       html: htmlContent,

@@ -1,12 +1,16 @@
+import { randomBytes } from "crypto";
+
 import {
   ConflictException,
   Injectable,
+  NotFoundException,
   UnauthorizedException,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 import * as bcrypt from "bcrypt";
 
+import EmailService from "@/common/services/email.service";
 import FormatDataService from "@/common/services/format-data.service";
 import { AuthData, TokensData } from "@/types";
 
@@ -24,6 +28,7 @@ export class AuthService {
     private usersRepository: UsersRepository,
     private jwtService: JwtService,
     private configService: ConfigService,
+    private emailService: EmailService,
     private formatDataService: FormatDataService,
   ) {}
 
@@ -134,4 +139,95 @@ export class AuthService {
       refresh_token_expires: refreshTokenExpires,
     };
   };
+
+  async forgotPassword(
+    email: string,
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      // Find user by email
+      const user = await this.usersRepository.findByEmail(email);
+
+      if (!user) {
+        throw new NotFoundException(
+          "User not found. Please check your email and try again.",
+        );
+      }
+
+      // Generate reset token
+      const resetToken = this.generateResetToken();
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour from now
+
+      // Save reset token to database
+      await this.usersRepository.createPasswordResetToken(
+        user.id,
+        resetToken,
+        expiresAt,
+      );
+
+      // Create reset link
+      const resetLink = `${this.configService.get("CLIENT_APP_BASE_URL")}/reset-password?token=${resetToken}`;
+
+      // Send email
+      const emailResponse = await this.emailService.sendForgotPasswordEmail(
+        user,
+        resetLink,
+      );
+      console.log("🚀 ~ emailResponse:", emailResponse);
+
+      if (!emailResponse.data.id) {
+        throw new Error("Failed to send password reset email");
+      }
+
+      return {
+        success: true,
+        message: "Password reset email sent successfully.",
+      };
+    } catch (error) {
+      console.error("Error sending forgot password email:", error);
+      throw new Error("Failed to send password reset email");
+    }
+  }
+
+  async resetPassword(
+    token: string,
+    newPassword: string,
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      // Find valid reset token
+      const resetToken =
+        await this.usersRepository.findValidPasswordResetToken(token);
+      if (!resetToken) {
+        throw new NotFoundException("Invalid or expired reset token");
+      }
+
+      // Update user password
+      await this.usersRepository.updateUserPassword(
+        resetToken.user_id,
+        newPassword,
+      );
+
+      // Mark token as used
+      await this.usersRepository.markPasswordResetTokenAsUsed(token);
+
+      return { success: true, message: "Password reset successfully." };
+    } catch (error) {
+      console.error("Error resetting password:", error);
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new Error("Failed to reset password");
+    }
+  }
+
+  async cleanupExpiredTokens(): Promise<void> {
+    try {
+      await this.usersRepository.deleteExpiredPasswordResetTokens();
+    } catch (error) {
+      console.error("Error cleaning up expired tokens:", error);
+    }
+  }
+
+  private generateResetToken(): string {
+    return randomBytes(32).toString("hex");
+  }
 }
