@@ -23,6 +23,15 @@ function mapStatusToResponseCode(status: number): ResponseCode {
   if (status === ResponseCode.UNAUTHORIZED) {
     return ResponseCode.UNAUTHORIZED;
   }
+  if (status === ResponseCode.NOT_FOUND) {
+    return ResponseCode.NOT_FOUND;
+  }
+  if (status === ResponseCode.CONFLICT) {
+    return ResponseCode.CONFLICT;
+  }
+  if (status === ResponseCode.INTERNAL_SERVER_ERROR) {
+    return ResponseCode.INTERNAL_SERVER_ERROR;
+  }
   // Add more mappings as needed
   return ResponseCode.BAD_REQUEST;
 }

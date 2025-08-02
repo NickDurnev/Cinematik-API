@@ -143,49 +143,52 @@ export class AuthService {
   async forgotPassword(
     email: string,
   ): Promise<{ success: boolean; message: string }> {
-    try {
-      // Find user by email
-      const user = await this.usersRepository.findByEmail(email);
+    // Find user by email
+    const user = await this.usersRepository.findByEmail(email);
 
-      if (!user) {
-        throw new NotFoundException(
-          "User not found. Please check your email and try again.",
-        );
-      }
-
-      // Generate reset token
-      const resetToken = this.generateResetToken();
-      const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour from now
-
-      // Save reset token to database
-      await this.usersRepository.createPasswordResetToken(
-        user.id,
-        resetToken,
-        expiresAt,
+    if (!user) {
+      throw new NotFoundException(
+        "User not found. Please check your email and try again.",
       );
+    }
 
-      // Create reset link
-      const resetLink = `${this.configService.get("CLIENT_APP_BASE_URL")}/reset-password?token=${resetToken}`;
+    const userActiveToken =
+      await this.usersRepository.findValidPasswordResetTokenByUserId(user.id);
 
-      // Send email
-      const emailResponse = await this.emailService.sendForgotPasswordEmail(
-        user,
-        resetLink,
+    if (userActiveToken?.id) {
+      throw new ConflictException(
+        "User already received a password reset email. Please try again later.",
       );
-      console.log("🚀 ~ emailResponse:", emailResponse);
+    }
 
-      if (!emailResponse.data.id) {
-        throw new Error("Failed to send password reset email");
-      }
+    // Generate reset token
+    const resetToken = this.generateResetToken();
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour from now
 
-      return {
-        success: true,
-        message: "Password reset email sent successfully.",
-      };
-    } catch (error) {
-      console.error("Error sending forgot password email:", error);
+    // Save reset token to database
+    await this.usersRepository.createPasswordResetToken(
+      user.id,
+      resetToken,
+      expiresAt,
+    );
+
+    // Create reset link
+    const resetLink = `${this.configService.get("CLIENT_APP_BASE_URL")}/reset-password?token=${resetToken}`;
+
+    // Send email
+    const emailResponse = await this.emailService.sendForgotPasswordEmail(
+      user,
+      resetLink,
+    );
+
+    if (!emailResponse.data.id) {
       throw new Error("Failed to send password reset email");
     }
+
+    return {
+      success: true,
+      message: "Password reset email sent successfully.",
+    };
   }
 
   async resetPassword(

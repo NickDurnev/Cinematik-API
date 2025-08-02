@@ -125,21 +125,46 @@ class UsersRepository {
     }
   }
 
-  async findValidPasswordResetToken(
-    token: string,
+  private async findValidPasswordResetTokenByField(
+    field: "user_id" | "token",
+    value: string,
   ): Promise<PasswordResetToken | null> {
     const now = new Date();
+    const fieldCondition =
+      field === "user_id"
+        ? eq(passwordResetTokens.user_id, value)
+        : eq(passwordResetTokens.token, value);
+
     const tokens = await this.database
       .select()
       .from(passwordResetTokens)
       .where(
         and(
-          eq(passwordResetTokens.token, token),
+          fieldCondition,
           eq(passwordResetTokens.used, "false"),
           gt(passwordResetTokens.expires_at, now),
         ),
       );
     return tokens[0] || null;
+  }
+
+  async findValidPasswordResetTokenByUserId(
+    userId: string,
+  ): Promise<PasswordResetToken | null> {
+    const res = await this.findValidPasswordResetTokenByField(
+      "user_id",
+      userId,
+    );
+
+    return res;
+  }
+
+  async findValidPasswordResetToken(
+    token: string,
+  ): Promise<PasswordResetToken | null> {
+    const res = await this.findValidPasswordResetTokenByField("token", token);
+
+    return res;
   }
 
   async markPasswordResetTokenAsUsed(token: string): Promise<void> {
