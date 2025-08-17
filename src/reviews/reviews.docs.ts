@@ -1,4 +1,4 @@
-import { CreateReviewDto } from "./dto";
+import { CreateReviewDto, UpdateReviewDto } from "./dto";
 
 const ReviewDataSchema = {
   type: "object",
@@ -18,7 +18,7 @@ export const CreateReviewApiBody = {
 };
 
 export const UpdateReviewApiBody = {
-  type: CreateReviewDto,
+  type: UpdateReviewDto,
   description: "Review data to update",
 };
 

@@ -195,31 +195,23 @@ export class AuthService {
     token: string,
     newPassword: string,
   ): Promise<{ success: boolean; message: string }> {
-    try {
-      // Find valid reset token
-      const resetToken =
-        await this.usersRepository.findValidPasswordResetToken(token);
-      if (!resetToken) {
-        throw new NotFoundException("Invalid or expired reset token");
-      }
-
-      // Update user password
-      await this.usersRepository.updateUserPassword(
-        resetToken.user_id,
-        newPassword,
-      );
-
-      // Mark token as used
-      await this.usersRepository.markPasswordResetTokenAsUsed(token);
-
-      return { success: true, message: "Password reset successfully." };
-    } catch (error) {
-      console.error("Error resetting password:", error);
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
-      throw new Error("Failed to reset password");
+    // Find valid reset token
+    const resetToken =
+      await this.usersRepository.findValidPasswordResetToken(token);
+    if (!resetToken) {
+      throw new NotFoundException("Invalid or expired reset token");
     }
+
+    // Update user password
+    await this.usersRepository.updateUserPassword(
+      resetToken.user_id,
+      newPassword,
+    );
+
+    // Mark token as used
+    await this.usersRepository.markPasswordResetTokenAsUsed(token);
+
+    return { success: true, message: "Password reset successfully." };
   }
 
   async cleanupExpiredTokens(): Promise<void> {

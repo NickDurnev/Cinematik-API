@@ -1,9 +1,9 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 
 import { User } from "@/auth/schema";
 import { PageMetaData, ReviewWithUser } from "@/types";
 
-import { CreateReviewDto, GetReviewsDto } from "./dto";
+import { CreateReviewDto, GetReviewsDto, UpdateReviewDto } from "./dto";
 import ReviewsRepository from "./reviews.repository";
 import { Review } from "./schema";
 
@@ -18,25 +18,19 @@ class ReviewsService {
     return this.reviewsRepository.getReviews(getDto, user);
   }
 
-  createReview(CreateReviewDto: CreateReviewDto, user: User): Promise<Review> {
-    return this.reviewsRepository.createReview(CreateReviewDto, user);
+  createReview(createReviewDto: CreateReviewDto, user: User): Promise<Review> {
+    return this.reviewsRepository.createReview(createReviewDto, user);
   }
 
   updateReview(
     userId: string,
-    updateReviewDto: CreateReviewDto,
+    updateReviewDto: UpdateReviewDto,
   ): Promise<Review> {
     return this.reviewsRepository.updateReview(userId, updateReviewDto);
   }
 
   async deleteReview(userId: string): Promise<Review> {
-    const result = await this.reviewsRepository.deleteReview(userId);
-
-    if (!result) {
-      throw new NotFoundException("Review not found");
-    }
-
-    return result;
+    return await this.reviewsRepository.deleteReview(userId);
   }
 }
 

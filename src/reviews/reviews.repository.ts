@@ -95,9 +95,7 @@ class ReviewsRepository {
           .limit(pageSize)
           .offset(offsetValue - 1 >= 0 ? offsetValue - 1 : 0);
       } else {
-        reviewsList = await baseQuery
-          .limit(pageSize)
-          .offset(offsetValue);
+        reviewsList = await baseQuery.limit(pageSize).offset(offsetValue);
       }
 
       // 5. If userReview exists and page 1, prepend it
@@ -191,6 +189,10 @@ class ReviewsRepository {
         .delete(reviews)
         .where(eq(reviews.user_id, userId))
         .returning();
+
+      if (!deletedReview) {
+        throw new Error("Review not found");
+      }
 
       return deletedReview;
     } catch (error) {

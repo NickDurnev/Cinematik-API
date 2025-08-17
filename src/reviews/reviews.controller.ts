@@ -125,11 +125,7 @@ class ReviewsController {
     status: 404,
     description: "Review not found",
   })
-  deleteReviewById(
-    @GetUser() user: User,
-  ): Promise<Review> {
-    console.log('user:', user);
-    console.log(123);
+  deleteReviewById(@GetUser() user: User): Promise<Review> {
     this.logger.verbose(`User "${user.name}" deleting review`);
     return this.reviewsService.deleteReview(user.id);
   }
