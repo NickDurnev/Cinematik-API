@@ -40,10 +40,11 @@ class MoviesRepository {
         .where(and(eq(movies.category, category), eq(movies.user_id, user.id)))
         .limit(pageSize)
         .offset(offsetValue);
-      // 2. Get total count
+      // 2. Get total count (filtered)
       const [{ count }] = await this.database
         .select({ count: sql<number>`count(*)` })
-        .from(movies);
+        .from(movies)
+        .where(and(eq(movies.category, category), eq(movies.user_id, user.id)));
       // 3. Build meta
       const total = Number(count);
       const totalPages = Math.ceil(total / pageSize);
@@ -131,6 +132,19 @@ class MoviesRepository {
       return deletedMovie;
     } catch (error) {
       this.logger.error("Failed to delete movie", error.stack);
+      throw new InternalServerErrorException();
+    }
+  }
+
+  async getUserMovieIds(user: User): Promise<number[]> {
+    try {
+      const rows = await this.database
+        .select({ idb_id: movies.idb_id })
+        .from(movies)
+        .where(eq(movies.user_id, user.id));
+      return rows.map(row => row.idb_id);
+    } catch (error) {
+      this.logger.error("Failed to get user movie ids", error.stack);
       throw new InternalServerErrorException();
     }
   }

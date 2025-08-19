@@ -42,14 +42,14 @@ class CreateMovieDto {
     example: "All Quiet on the Western Front",
   })
   @IsString()
-  vote_average: string;
+  vote_average: number;
 
   @ApiProperty({
     description: "Genres of the movie",
     example: "[{id: 28, name: 'Action'}, {id: 12, name: 'Adventure'}]",
   })
   @IsArray()
-  genres: { id: number; name: string }[];
+  genres: { id: string; name: string }[];
 
   @ApiProperty({
     description: "Release date of the movie",

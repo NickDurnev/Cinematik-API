@@ -29,6 +29,10 @@ class MoviesService {
   async deleteMovie(movieId: string): Promise<Movie> {
     return await this.moviesRepository.deleteMovie(movieId);
   }
+
+  getUserMovieIds(user: User): Promise<number[]> {
+    return this.moviesRepository.getUserMovieIds(user);
+  }
 }
 
 export default MoviesService;

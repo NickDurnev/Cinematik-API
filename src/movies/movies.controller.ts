@@ -127,6 +127,19 @@ class MoviesController {
     this.logger.verbose(`User "${user.name}" deleting movie`);
     return this.moviesService.deleteMovie(id);
   }
+
+  @Get("ids")
+  @ApiOperation({ summary: "Get all user's movie IDB ids" })
+  @ApiResponse({
+    status: 200,
+    description: "User's movie IDs retrieved successfully",
+  })
+  async getUserMovieIds(
+    @GetUser() user: User,
+  ): Promise<ResponseWrapper<number[]>> {
+    const data = await this.moviesService.getUserMovieIds(user);
+    return buildResponse({ data });
+  }
 }
 
 export default MoviesController;

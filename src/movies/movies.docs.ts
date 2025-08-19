@@ -15,7 +15,7 @@ const MovieDataSchema = {
       items: {
         type: "object",
         properties: {
-          id: { type: "integer" },
+          id: { type: "string" },
           name: { type: "string" },
         },
       },
@@ -100,6 +100,22 @@ export const GetMoviesApiResponse = {
           total_pages: { type: "number" },
         },
       },
+    },
+  },
+};
+
+export const GetMovieIdsApiResponse = {
+  status: 200,
+  description: "User's movie IDs retrieved successfully",
+  schema: {
+    type: "object",
+    properties: {
+      data: {
+        type: "array",
+        items: { type: "integer" },
+      },
+      code: { type: "string" },
+      message: { type: "string" },
     },
   },
 };
