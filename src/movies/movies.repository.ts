@@ -136,13 +136,23 @@ class MoviesRepository {
     }
   }
 
-  async getUserMovieIds(user: User): Promise<number[]> {
+  async getUserMovieIds(
+    user: User,
+  ): Promise<Pick<Movie, "id" | "idb_id" | "category">[]> {
     try {
       const rows = await this.database
-        .select({ idb_id: movies.idb_id })
+        .select({
+          id: movies.id,
+          idb_id: movies.idb_id,
+          category: movies.category,
+        })
         .from(movies)
         .where(eq(movies.user_id, user.id));
-      return rows.map(row => row.idb_id);
+      return rows.map(row => ({
+        id: row.id,
+        idb_id: row.idb_id,
+        category: row.category,
+      }));
     } catch (error) {
       this.logger.error("Failed to get user movie ids", error.stack);
       throw new InternalServerErrorException();

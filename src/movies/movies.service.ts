@@ -30,7 +30,9 @@ class MoviesService {
     return await this.moviesRepository.deleteMovie(movieId);
   }
 
-  getUserMovieIds(user: User): Promise<number[]> {
+  getUserMovieIds(
+    user: User,
+  ): Promise<Pick<Movie, "id" | "idb_id" | "category">[]> {
     return this.moviesRepository.getUserMovieIds(user);
   }
 }

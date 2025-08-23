@@ -136,7 +136,7 @@ class MoviesController {
   })
   async getUserMovieIds(
     @GetUser() user: User,
-  ): Promise<ResponseWrapper<number[]>> {
+  ): Promise<ResponseWrapper<Pick<Movie, "id" | "idb_id" | "category">[]>> {
     const data = await this.moviesService.getUserMovieIds(user);
     return buildResponse({ data });
   }
