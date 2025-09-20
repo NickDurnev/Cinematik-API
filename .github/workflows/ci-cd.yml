@@ -76,6 +76,9 @@ jobs:
             
             echo "Installing all dependencies (including dev dependencies for build)..."
             npm install
+            
+            echo "Setting Node.js memory options..."
+            export NODE_OPTIONS="--max-old-space-size=4096"
 
             echo "Checking current directory and package.json..."
             pwd
