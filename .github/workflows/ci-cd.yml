@@ -25,17 +25,30 @@ jobs:
             source "$NVM_DIR/nvm.sh"
             nvm use 22.14.0 
 
+            # Check if Cinematik-API directory exists, if not clone it
+            if [ ! -d "Cinematik-API" ]; then
+                echo "Cloning repository..."
+                git clone https://${{ secrets.USERNAME }}:${{ secrets.TOKEN }}@github.com/${{ secrets.USERNAME }}/Cinematik-API.git
+            fi
+            
             cd Cinematik-API
 
-            echo "Resetting repository to avoid conflicts..."
-            git reset --hard HEAD
-            git clean -fd
-            git pull https://${{ secrets.USERNAME }}:${{ secrets.TOKEN }}@github.com/${{ secrets.USERNAME }}/Cinematik-API.git main            
+            echo "Ensuring we're on the main branch..."
+            git checkout main
+            
+            echo "Fetching latest changes..."
+            git fetch origin
+            
+            echo "Resetting to latest main branch..."
+            git reset --hard origin/main
+            
+            echo "Cleaning untracked files..."
+            git clean -fd            
 
             echo "Updating environment variables..."
             cat <<EOF > .env
             PORT=${{ secrets.PORT }}
-            STAGE=prod
+            STAGE=production
             DATABASE_URL=${{ secrets.DATABASE_URL }}
             JWT_SECRET=${{ secrets.JWT_SECRET }}
             RESEND_API_KEY=${{ secrets.RESEND_API_KEY }}
