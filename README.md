@@ -36,11 +36,47 @@ The API is used to access and manipulate data related to tasks and users. It con
 - Bcrypt
 - Passport-JWT
 - Joi
+- Resend (Email Service)
+
+## Features
+
+### Authentication
+- User registration and login
+- Social login (Google, Facebook, etc.)
+- JWT token-based authentication
+- Password reset functionality
+- Email notifications using Resend
+
+### Password Reset Flow
+1. User requests password reset by providing email
+2. System generates a secure reset token (valid for 1 hour)
+3. User receives a beautiful HTML email with reset link
+4. User clicks the link and enters new password
+5. System validates token and updates password
+6. Token is marked as used and cannot be reused
 
 ## Installation
 
 ```bash
 $ npm install
+```
+
+## Environment Variables
+
+Make sure to set up the following environment variables:
+
+```env
+# Database
+DATABASE_URL=postgresql://username:password@localhost:5432/cinematik_api
+
+# JWT
+JWT_SECRET=your-super-secret-jwt-key
+
+# Email Service (Resend)
+RESEND_API_KEY=your-resend-api-key
+
+# Frontend URL (for password reset links)
+FRONTEND_URL=http://localhost:3000
 ```
 
 ## Running MacOS Postgres DB locally 
@@ -69,6 +105,20 @@ $ psql -d cinematik_api -c "\dt"
 
 If you got "Did not find any relations", you successfully connected ✅
 
+## Migrations 
+
+Generate SQL migrations file using Drizzle-Kit
+
+```bash
+$ npx drizzle-kit generate
+```
+
+Apply generated SQL migration files
+
+```bash
+$ npx drizzle-kit migrate
+```
+
 ## Running the app
 
 ```bash
@@ -81,6 +131,43 @@ $ npm run start:dev
 # production mode
 $ npm run start:prod
 ```
+
+## API Endpoints
+
+### Authentication
+- `POST /auth/signup` - Register new user
+- `POST /auth/signin` - Login user
+- `POST /auth/social` - Social login
+- `POST /auth/refresh` - Refresh access token
+- `POST /auth/forgot-password` - Request password reset email
+- `POST /auth/reset-password` - Reset password using token
+
+### Password Reset Example
+
+1. Request password reset:
+```bash
+curl -X POST http://localhost:3000/auth/forgot-password \
+  -H "Content-Type: application/json" \
+  -d '{"email": "user@example.com"}'
+```
+
+2. Check email for reset link and use it to reset password:
+```bash
+curl -X POST http://localhost:3000/auth/reset-password \
+  -H "Content-Type: application/json" \
+  -d '{
+    "token": "reset-token-from-email",
+    "newPassword": "NewStrongPass123!"
+  }'
+```
+
+## Email Templates
+
+The application includes beautiful, responsive HTML email templates for:
+- Password reset emails with secure tokens
+- Professional branding with Cinematik theme
+- Mobile-responsive design
+- Security warnings and expiry notices
 
 ## Test
 

@@ -1,0 +1,2 @@
+CREATE INDEX "movies_user_id_category_idx" ON "movies" USING btree ("user_id","category");--> statement-breakpoint
+CREATE UNIQUE INDEX "movies_user_id_idb_id_unique" ON "movies" USING btree ("user_id","idb_id");

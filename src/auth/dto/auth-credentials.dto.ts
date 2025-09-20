@@ -1,16 +1,48 @@
-import { IsString, Matches, MaxLength, MinLength } from 'class-validator';
+import {
+  IsEmail,
+  IsName,
+  IsPassword,
+  IsPictureUrl,
+} from "@/common/decorators/dto.decorators";
 
 export class AuthCredentialsDto {
-  @IsString()
-  @MinLength(4)
-  @MaxLength(20)
-  username: string;
+  @IsName()
+  name: string;
 
-  @IsString()
-  @MinLength(8)
-  @MaxLength(32)
-  @Matches(/((?=.*\d)|(?=.*\W+))(?![.\n])(?=.*[A-Z])(?=.*[a-z]).*$/, {
-    message: 'password is too weak',
-  })
+  @IsPassword()
   password: string;
+
+  @IsEmail()
+  email: string;
+}
+
+export class AuthSocialDto {
+  @IsName()
+  name: string;
+
+  @IsEmail()
+  email: string;
+
+  @IsPictureUrl()
+  picture: string;
+}
+
+export class AuthSignInDto {
+  @IsEmail()
+  email: string;
+
+  @IsPassword()
+  password: string;
+}
+
+export class ForgotPasswordDto {
+  @IsEmail()
+  email: string;
+}
+
+export class ResetPasswordDto {
+  token: string;
+
+  @IsPassword()
+  newPassword: string;
 }
