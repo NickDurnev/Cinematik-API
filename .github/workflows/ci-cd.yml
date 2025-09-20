@@ -20,6 +20,8 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            set -e  # Exit on any error
+            
             echo "Loading NVM..."
             export NVM_DIR="$HOME/.nvm"
             source "$NVM_DIR/nvm.sh"
@@ -32,6 +34,15 @@ jobs:
             fi
             
             cd Cinematik-API
+
+            echo "Checking if we're in a git repository..."
+            if [ ! -d ".git" ]; then
+                echo "Error: Not in a git repository. Re-cloning..."
+                cd ..
+                rm -rf Cinematik-API
+                git clone https://${{ secrets.USERNAME }}:${{ secrets.TOKEN }}@github.com/${{ secrets.USERNAME }}/Cinematik-API.git
+                cd Cinematik-API
+            fi
 
             echo "Ensuring we're on the main branch..."
             git checkout main
@@ -62,6 +73,15 @@ jobs:
             echo "Installing dependencies..."
             npm install --production
             npm install --save-dev @types/express @types/node @types/uuid
+            
+            echo "Installing all dependencies (including dev dependencies for build)..."
+            npm install
+
+            echo "Checking current directory and package.json..."
+            pwd
+            ls -la
+            echo "Package.json contents:"
+            cat package.json | grep -A 20 '"scripts"'
 
             echo "Building the application..."
             npm run build
@@ -69,7 +89,22 @@ jobs:
             echo "Running database migrations..."
             npm run db:migrate-prod
 
+            echo "Checking if dist directory exists and contains main.js..."
+            ls -la dist/
+            ls -la dist/src/ || echo "dist/src directory not found"
+
             echo "Restarting application..."
-            pm2 delete cinematik-api || true
-            pm2 start dist/src/main.js --name cinematik-api --env production
-            pm2 save
+            pm2 delete cinematik-api || echo "No existing process to delete"
+            
+            echo "Starting application with PM2..."
+            if [ -f "dist/src/main.js" ]; then
+                pm2 start dist/src/main.js --name cinematik-api --env production
+                pm2 save
+                echo "Application started successfully"
+                pm2 status
+            else
+                echo "Error: dist/src/main.js not found. Build may have failed."
+                echo "Contents of dist directory:"
+                find dist -type f -name "*.js" | head -10
+                exit 1
+            fi
