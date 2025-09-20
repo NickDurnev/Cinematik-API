@@ -87,7 +87,7 @@ jobs:
             npm run build
 
             echo "Running database migrations..."
-            npm run db:migrate-prod
+            npm run db:migrate-dev
 
             echo "Checking if dist directory exists and contains main.js..."
             ls -la dist/
