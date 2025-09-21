@@ -13,7 +13,7 @@ import ProfileModule from "./profile/profile.module";
 @Module({
   imports: [
     ConfigModule.forRoot({
-      envFilePath: [`.env.stage.${process.env.STAGE}`],
+      envFilePath: [`.env.stage.${process.env.STAGE || "dev"}`],
       validate: config => {
         return configValidationSchema.parse(config);
       },

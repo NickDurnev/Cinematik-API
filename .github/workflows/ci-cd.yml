@@ -101,7 +101,7 @@ jobs:
             
             echo "Starting application with PM2..."
             if [ -f "dist/src/main.js" ]; then
-                pm2 start dist/src/main.js --name cinematik-api --env production
+                STAGE=production pm2 start dist/src/main.js --name cinematik-api
                 pm2 save
                 echo "Application started successfully"
                 pm2 status
