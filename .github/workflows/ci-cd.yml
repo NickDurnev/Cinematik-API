@@ -57,7 +57,7 @@ jobs:
             git clean -fd            
 
             echo "Updating environment variables..."
-            cat <<EOF > .env
+            cat <<EOF > .env.stage.production
             PORT=${{ secrets.PORT }}
             STAGE=production
             DATABASE_URL=${{ secrets.DATABASE_URL }}
