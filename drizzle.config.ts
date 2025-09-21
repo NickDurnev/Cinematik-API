@@ -1,7 +1,9 @@
 import * as dotenv from "dotenv";
 import { defineConfig } from "drizzle-kit";
 
-dotenv.config({ path: ".env.stage.dev" });
+// Load environment variables based on STAGE
+const stage = process.env.STAGE || "dev";
+dotenv.config({ path: `.env.stage.${stage}` });
 
 // Modify DATABASE_URL to use sslmode=prefer to allow SSL with fallback
 const getDatabaseUrl = () => {
