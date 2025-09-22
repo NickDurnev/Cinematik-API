@@ -13,12 +13,7 @@ export class EmailService {
   private forgotPasswordTemplate: Handlebars.TemplateDelegate;
 
   constructor(private configService: ConfigService) {
-    const isProd = this.configService.get("STAGE") === "prod";
-    console.log("🚀 ~ isProd:", isProd);
-
-    const templatesDir = isProd
-      ? join(__dirname, "common/templates")
-      : join(process.cwd(), "src/common/templates");
+    const templatesDir = join(process.cwd(), "src/common/templates");
 
     // Load and compile the HTML templates once at service initialization
     const templateSource = readFileSync(
