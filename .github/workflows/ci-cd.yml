@@ -57,9 +57,9 @@ jobs:
             git clean -fd            
 
             echo "Updating environment variables..."
-            cat <<EOF > .env.stage.production
+            cat <<EOF > .env.stage.prod
             PORT=${{ secrets.PORT }}
-            STAGE=production
+            STAGE=prod
             DATABASE_URL=${{ secrets.DATABASE_URL }}
             JWT_SECRET=${{ secrets.JWT_SECRET }}
             RESEND_API_KEY=${{ secrets.RESEND_API_KEY }}
@@ -90,7 +90,7 @@ jobs:
             npm run build
 
             echo "Running database migrations..."
-            STAGE=production npm run db:migrate-prod
+            STAGE=prod npm run db:migrate-prod
 
             echo "Checking if dist directory exists and contains main.js..."
             ls -la dist/
@@ -101,7 +101,7 @@ jobs:
             
             echo "Starting application with PM2..."
             if [ -f "dist/src/main.js" ]; then
-                STAGE=production pm2 start dist/src/main.js --name cinematik-api
+                STAGE=prod pm2 start dist/src/main.js --name cinematik-api
                 pm2 save
                 echo "Application started successfully"
                 pm2 status

@@ -1,7 +1,9 @@
 import { ConfigService } from "@nestjs/config";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
+
 import * as userSchema from "@/auth/schema";
+
 import { DATABASE_CONNECTION } from "./database.connection";
 
 export const DrizzleProvider = {
@@ -11,7 +13,9 @@ export const DrizzleProvider = {
       connectionString: configService.getOrThrow("DATABASE_URL"),
       ssl:
         configService.get("STAGE") === "prod"
-          ? { rejectUnauthorized: false }
+          ? {
+              rejectUnauthorized: true,
+            }
           : undefined,
     });
     return drizzle(pool, { schema: { ...userSchema } });
