@@ -16,7 +16,7 @@
     "lint:fix": "biome lint --write .",
     "lint-staged": "lint-staged",
     "db:migrate-dev": "NODE_TLS_REJECT_UNAUTHORIZED=0 npx drizzle-kit migrate",
-    "db:migrate-prod": "NODE_TLS_REJECT_UNAUTHORIZED=0 npx drizzle-kit migrate",
+    "db:migrate-prod": "npx drizzle-kit migrate",
     "format": "biome format .",
     "format:fix": "biome format --write .",
     "prepare": "husky",
