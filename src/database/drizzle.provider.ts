@@ -11,12 +11,11 @@ export const DrizzleProvider = {
   useFactory: (configService: ConfigService) => {
     const pool = new Pool({
       connectionString: configService.getOrThrow("DATABASE_URL"),
-      ssl:
-        configService.get("STAGE") === "prod"
-          ? {
-              rejectUnauthorized: true,
-            }
-          : undefined,
+      ssl: (() => {
+        const rawCa = configService.get<string>("DATABASE_SSL_CA");
+        const ca = rawCa ? rawCa.replace(/\\n/g, "\n") : undefined;
+        return ca ? { ca, rejectUnauthorized: true } : true;
+      })(),
     });
     return drizzle(pool, { schema: { ...userSchema } });
   },
