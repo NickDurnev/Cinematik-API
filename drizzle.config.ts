@@ -22,6 +22,10 @@ export default defineConfig({
   dialect: "postgresql",
   dbCredentials: {
     url: getDatabaseUrl(),
-    ssl: { rejectUnauthorized: false },
+    ssl: (() => {
+      const raw = process.env.DATABASE_SSL_CA;
+      const ca = raw ? raw.replace(/\\n/g, "\n") : undefined;
+      return ca ? { ca, rejectUnauthorized: true } : true;
+    })(),
   },
 });

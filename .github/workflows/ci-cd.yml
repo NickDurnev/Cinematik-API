@@ -61,6 +61,7 @@ jobs:
             PORT=${{ secrets.PORT }}
             STAGE=prod
             DATABASE_URL=${{ secrets.DATABASE_URL }}
+            DATABASE_SSL_CA=${{ secrets.DATABASE_SSL_CA }}
             JWT_SECRET=${{ secrets.JWT_SECRET }}
             RESEND_API_KEY=${{ secrets.RESEND_API_KEY }}
             CLIENT_APP_BASE_URL=${{ secrets.CLIENT_APP_BASE_URL }}
