@@ -63,21 +63,7 @@ $ npm install
 
 ## Environment Variables
 
-Make sure to set up the following environment variables:
-
-```env
-# Database
-DATABASE_URL=postgresql://username:password@localhost:5432/cinematik_api
-
-# JWT
-JWT_SECRET=your-super-secret-jwt-key
-
-# Email Service (Resend)
-RESEND_API_KEY=your-resend-api-key
-
-# Frontend URL (for password reset links)
-FRONTEND_URL=http://localhost:3000
-```
+Make sure to set up the following environment variables, check env.example
 
 ## Running MacOS Postgres DB locally 
 
