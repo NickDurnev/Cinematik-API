@@ -12,26 +12,21 @@ export const DrizzleProvider = {
   useFactory: (configService: ConfigService) => {
     const logger = new Logger("DrizzleProvider");
 
-    const databaseUrl = configService.getOrThrow("DATABASE_URL");
-    const sslOption = (() => {
-      const rawCa = configService.get<string>("DATABASE_SSL_CA");
-      const ca = rawCa ? rawCa.replace(/\\n/g, "\n") : undefined;
-      return ca ? { ca, rejectUnauthorized: true } : true;
-    })();
-
     const pool = new Pool({
-      connectionString: databaseUrl,
-      ssl: sslOption,
+      user: configService.getOrThrow("DB_USER"),
+      password: configService.getOrThrow("DB_PASSWORD"),
+      host: configService.getOrThrow("DB_HOST"),
+      port: configService.getOrThrow("DB_PORT"),
+      database: configService.getOrThrow("DB_NAME"),
+      ssl: {
+        ca: configService.getOrThrow("DATABASE_SSL_CA"),
+        rejectUnauthorized: true,
+      },
     });
 
     // Connection check at startup with helpful logs
     (async () => {
       try {
-        const caInfo =
-          typeof sslOption === "object" && sslOption?.ca
-            ? `custom CA provided (len=${String(sslOption.ca).length})`
-            : String(sslOption);
-        logger.log(`Initializing database pool. ssl=${caInfo}`);
         await pool.query("SELECT 1");
         logger.log("Database connection check succeeded");
       } catch (error: unknown) {

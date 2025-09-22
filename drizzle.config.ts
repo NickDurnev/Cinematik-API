@@ -1,5 +1,3 @@
-import * as fs from "fs";
-
 import * as dotenv from "dotenv";
 import { defineConfig } from "drizzle-kit";
 
@@ -12,23 +10,14 @@ export default defineConfig({
   out: "./drizzle",
   dialect: "postgresql",
   dbCredentials: {
-    url: process.env.DATABASE_URL,
-    ssl: (() => {
-      const raw = process.env.DATABASE_SSL_CA;
-      const caFromEnv = raw ? raw.replace(/\\n/g, "\n") : undefined;
-      if (caFromEnv) {
-        return { ca: caFromEnv, rejectUnauthorized: true } as const;
-      }
-      const caPath = process.env.PGSSLROOTCERT;
-      if (caPath && fs.existsSync(caPath)) {
-        try {
-          const caFromFile = fs.readFileSync(caPath, "utf8");
-          return { ca: caFromFile, rejectUnauthorized: true } as const;
-        } catch {
-          return true as const;
-        }
-      }
-      return true as const;
-    })(),
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    host: process.env.DB_HOST,
+    port: Number(process.env.DB_PORT),
+    database: process.env.DB_NAME,
+    ssl: {
+      ca: process.env.DATABASE_SSL_CA,
+      rejectUnauthorized: true,
+    },
   },
 });
