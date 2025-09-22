@@ -90,6 +90,11 @@ jobs:
             echo "Building the application..."
             npm run build
 
+            echo "Preparing SSL for migrations (PGSSLMODE=require with CA file)..."
+            echo "${{ secrets.DATABASE_SSL_CA }}" > ca.pem
+            export PGSSLROOTCERT="$PWD/ca.pem"
+            export PGSSLMODE=require
+
             echo "Running database migrations..."
             STAGE=prod npm run db:migrate-prod
 
