@@ -90,8 +90,13 @@ jobs:
             echo "Building the application..."
             npm run build
 
-            echo "Running database migrations (temporarily disabling TLS verification for CLI)..."
-            STAGE=prod NODE_TLS_REJECT_UNAUTHORIZED=0 npm run db:migrate-prod
+            echo "Preparing SSL for migrations (PGSSLMODE=require with CA file)..."
+            echo "${{ secrets.DATABASE_SSL_CA }}" > ca.pem
+            export PGSSLROOTCERT="$PWD/ca.pem"
+            export PGSSLMODE=require
+
+            echo "Running database migrations..."
+            STAGE=prod npm run db:migrate-prod
 
             echo "Checking if dist directory exists and contains main.js..."
             ls -la dist/
