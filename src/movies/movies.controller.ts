@@ -19,6 +19,7 @@ import {
   ApiResponse,
   ApiTags,
 } from "@nestjs/swagger";
+import { I18nContext, I18nService } from "nestjs-i18n";
 
 import { GetUser } from "@/auth/get-user.decorator";
 import { User } from "@/auth/schema";
@@ -42,7 +43,10 @@ import { Movie } from "./schema";
 class MoviesController {
   private logger = new Logger("MoviesController");
 
-  constructor(private moviesService: MoviesService) {}
+  constructor(
+    private moviesService: MoviesService,
+    private readonly i18n: I18nService,
+  ) {}
 
   @Get()
   @ApiOperation({ summary: "Get all movies" })
@@ -83,7 +87,9 @@ class MoviesController {
     return buildResponse({
       data,
       code: ResponseCode.CREATED,
-      message: "Movie created",
+      message: this.i18n.t("content.movieCreated", {
+        lang: I18nContext.current().lang,
+      }),
     });
   }
 

@@ -18,6 +18,7 @@ import {
   ApiResponse,
   ApiTags,
 } from "@nestjs/swagger";
+import { I18nContext, I18nService } from "nestjs-i18n";
 
 import { GetUser } from "@/auth/get-user.decorator";
 import OptionalAuthGuard from "@/auth/optional-auth-guard";
@@ -41,7 +42,10 @@ import { Review } from "./schema";
 class ReviewsController {
   private logger = new Logger("ReviewsController");
 
-  constructor(private reviewsService: ReviewsService) {}
+  constructor(
+    private reviewsService: ReviewsService,
+    private readonly i18n: I18nService,
+  ) {}
 
   @Get()
   @UseGuards(OptionalAuthGuard)
@@ -87,7 +91,9 @@ class ReviewsController {
     return buildResponse({
       data,
       code: ResponseCode.CREATED,
-      message: "Review created",
+      message: this.i18n.t("content.reviewCreated", {
+        lang: I18nContext.current().lang,
+      }),
     });
   }
 

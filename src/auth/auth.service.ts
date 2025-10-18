@@ -9,6 +9,7 @@ import {
 import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 import * as bcrypt from "bcrypt";
+import { I18nContext, I18nService } from "nestjs-i18n";
 
 import EmailService from "@/common/services/email.service";
 import FormatDataService from "@/common/services/format-data.service";
@@ -30,6 +31,7 @@ export class AuthService {
     private configService: ConfigService,
     private emailService: EmailService,
     private formatDataService: FormatDataService,
+    private readonly i18n: I18nService,
   ) {}
 
   async SignUp(authCredentialsDto: AuthCredentialsDto): Promise<AuthData> {
@@ -38,7 +40,11 @@ export class AuthService {
     );
 
     if (existingUser) {
-      throw new ConflictException("User already exists");
+      throw new ConflictException(
+        this.i18n.t("auth.userExists", {
+          lang: I18nContext.current().lang,
+        }),
+      );
     }
 
     const user =
@@ -54,7 +60,11 @@ export class AuthService {
       return { tokens, user: userData };
     }
 
-    throw new UnauthorizedException("User already exists");
+    throw new UnauthorizedException(
+      this.i18n.t("auth.userExists", {
+        lang: I18nContext.current().lang,
+      }),
+    );
   }
 
   async socialLogin(authSocialDto: AuthSocialDto): Promise<AuthData> {
@@ -64,7 +74,9 @@ export class AuthService {
       user = await this.usersRepository.createUserBySocial(authSocialDto);
       if (!user) {
         throw new UnauthorizedException(
-          "Unable to create user with social login",
+          this.i18n.t("auth.socialLoginFailed", {
+            lang: I18nContext.current().lang,
+          }),
         );
       }
     }
@@ -91,7 +103,11 @@ export class AuthService {
       const userData = await this.formatDataService.formatUserData(user);
       return { tokens, user: userData };
     } else {
-      throw new UnauthorizedException("Please check your login credentials");
+      throw new UnauthorizedException(
+        this.i18n.t("auth.invalidLoginCredentials", {
+          lang: I18nContext.current().lang,
+        }),
+      );
     }
   }
 
@@ -115,7 +131,11 @@ export class AuthService {
         access_token_expires: accessTokenExpires,
       };
     } catch (_) {
-      throw new UnauthorizedException("Invalid refresh token");
+      throw new UnauthorizedException(
+        this.i18n.t("auth.invalidRefreshToken", {
+          lang: I18nContext.current().lang,
+        }),
+      );
     }
   }
 
@@ -148,7 +168,9 @@ export class AuthService {
 
     if (!user) {
       throw new NotFoundException(
-        "User not found. Please check your email and try again.",
+        this.i18n.t("auth.userNotFound", {
+          lang: I18nContext.current().lang,
+        }),
       );
     }
 
@@ -157,7 +179,9 @@ export class AuthService {
 
     if (userActiveToken?.id) {
       throw new ConflictException(
-        "User already received a password reset email. Please try again later.",
+        this.i18n.t("auth.userReceivedPasswordResetEmail", {
+          lang: I18nContext.current().lang,
+        }),
       );
     }
 
@@ -182,12 +206,18 @@ export class AuthService {
     );
 
     if (!emailResponse.data.id) {
-      throw new Error("Failed to send password reset email");
+      throw new Error(
+        this.i18n.t("auth.passwordResetFailureMessage", {
+          lang: I18nContext.current().lang,
+        }),
+      );
     }
 
     return {
       success: true,
-      message: "Password reset email sent successfully.",
+      message: this.i18n.t("auth.passwordResetSuccessMessage", {
+        lang: I18nContext.current().lang,
+      }),
     };
   }
 
@@ -199,7 +229,11 @@ export class AuthService {
     const resetToken =
       await this.usersRepository.findValidPasswordResetToken(token);
     if (!resetToken) {
-      throw new NotFoundException("Invalid or expired reset token");
+      throw new NotFoundException(
+        this.i18n.t("auth.invalidResetToken", {
+          lang: I18nContext.current().lang,
+        }),
+      );
     }
 
     // Update user password
@@ -211,7 +245,12 @@ export class AuthService {
     // Mark token as used
     await this.usersRepository.markPasswordResetTokenAsUsed(token);
 
-    return { success: true, message: "Password reset successfully." };
+    return {
+      success: true,
+      message: this.i18n.t("auth.resetPasswordSuccessMessage", {
+        lang: I18nContext.current().lang,
+      }),
+    };
   }
 
   async cleanupExpiredTokens(): Promise<void> {

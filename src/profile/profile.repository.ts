@@ -4,13 +4,11 @@ import {
   InternalServerErrorException,
   Logger,
 } from "@nestjs/common";
-import { eq} from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
+import { I18nContext, I18nService } from "nestjs-i18n";
 
-import {
-  User,
-  users,
-} from "@/auth/schema";
+import { User, users } from "@/auth/schema";
 import { DATABASE_CONNECTION } from "@/database/database.connection";
 
 import { UpdateProfileDto } from "./dto";
@@ -20,6 +18,7 @@ class ProfileRepository {
   constructor(
     @Inject(DATABASE_CONNECTION)
     private readonly database: NodePgDatabase,
+    private readonly i18n: I18nService,
   ) {}
 
   private logger = new Logger("ProfileRepository");
@@ -55,7 +54,11 @@ class ProfileRepository {
         .returning();
 
       if (!updatedProfile) {
-        throw new Error("Profile not found");
+        throw new Error(
+          this.i18n.t("auth.profileNotFound", {
+            lang: I18nContext.current().lang,
+          }),
+        );
       }
 
       return updatedProfile;

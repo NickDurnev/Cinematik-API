@@ -6,6 +6,7 @@ import {
 import * as bcrypt from "bcrypt";
 import { and, eq, gt, lt } from "drizzle-orm";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
+import { I18nContext, I18nService } from "nestjs-i18n";
 
 import { DATABASE_CONNECTION } from "@/database/database.connection";
 
@@ -17,6 +18,7 @@ class UsersRepository {
   constructor(
     @Inject(DATABASE_CONNECTION)
     private readonly database: NodePgDatabase,
+    private readonly i18n: I18nService,
   ) {}
 
   async createUserByCredentials(
@@ -37,7 +39,11 @@ class UsersRepository {
       return (await this.database.insert(users).values(user).returning())[0];
     } catch (error) {
       console.error("Database error during user creation:", error);
-      throw new InternalServerErrorException("Failed to create user");
+      throw new InternalServerErrorException(
+        this.i18n.t("auth.createUserFailed", {
+          lang: I18nContext.current().lang,
+        }),
+      );
     }
   }
 
@@ -53,7 +59,11 @@ class UsersRepository {
       return (await this.database.insert(users).values(user).returning())[0];
     } catch (error) {
       console.error("Database error during user creation:", error);
-      throw new InternalServerErrorException("Failed to create user");
+      throw new InternalServerErrorException(
+        this.i18n.t("auth.createUserFailed", {
+          lang: I18nContext.current().lang,
+        }),
+      );
     }
   }
 
@@ -87,7 +97,11 @@ class UsersRepository {
       )[0];
     } catch (error) {
       console.error("Database error during password update:", error);
-      throw new InternalServerErrorException("Failed to update password");
+      throw new InternalServerErrorException(
+        this.i18n.t("auth.updatePasswordFailed", {
+          lang: I18nContext.current().lang,
+        }),
+      );
     }
   }
 
@@ -120,7 +134,9 @@ class UsersRepository {
         error,
       );
       throw new InternalServerErrorException(
-        "Failed to create password reset token",
+        this.i18n.t("auth.createPasswordResetTokenFailed", {
+          lang: I18nContext.current().lang,
+        }),
       );
     }
   }

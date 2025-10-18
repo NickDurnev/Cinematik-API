@@ -6,6 +6,7 @@ import {
 } from "@nestjs/common";
 import { eq, sql } from "drizzle-orm";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
+import { I18nContext, I18nService } from "nestjs-i18n";
 
 import { User, users } from "@/auth/schema";
 import { DATABASE_CONNECTION } from "@/database/database.connection";
@@ -19,6 +20,7 @@ class ReviewsRepository {
   constructor(
     @Inject(DATABASE_CONNECTION)
     private readonly database: NodePgDatabase,
+    private readonly i18n: I18nService,
   ) {}
 
   private logger = new Logger("ReviewRepository");
@@ -170,7 +172,11 @@ class ReviewsRepository {
         .returning();
 
       if (!updatedReview) {
-        throw new Error("Review not found");
+        throw new Error(
+          this.i18n.t("content.reviewNotFound", {
+            lang: I18nContext.current().lang,
+          }),
+        );
       }
 
       return updatedReview;
@@ -191,7 +197,11 @@ class ReviewsRepository {
         .returning();
 
       if (!deletedReview) {
-        throw new Error("Review not found");
+        throw new Error(
+          this.i18n.t("content.reviewNotFound", {
+            lang: I18nContext.current().lang,
+          }),
+        );
       }
 
       return deletedReview;
