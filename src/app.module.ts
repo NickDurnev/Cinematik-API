@@ -24,12 +24,12 @@ import ProfileModule from "./profile/profile.module";
       useFactory: () => ({
         fallbackLanguage: "en",
         loaderOptions: {
-          path: join(__dirname, "/i18n/"),
+          path: join(process.cwd(), "dist/i18n"),
           watch: true,
         },
-        typesOutputPath: join(__dirname, "../src/generated/i18n.generated.ts"),
+        typesOutputPath: join(__dirname, "../../generated/i18n.generated.ts"),
       }),
-      resolvers: [new HeaderResolver(["x-custom-lang"])],
+      resolvers: [new HeaderResolver(["X-Accept-Language"])],
     }),
     ReviewsModule,
     MoviesModule,
