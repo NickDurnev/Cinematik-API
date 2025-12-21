@@ -1,7 +1,16 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.0.0/schema.json",
-  "vcs": { "enabled": false, "clientKind": "git", "useIgnoreFile": false },
-  "files": { "ignoreUnknown": false, "includes": ["**"] },
+  "$schema": "https://biomejs.dev/schemas/2.0.4/schema.json",
+  "vcs": {
+    "enabled": false,
+    "clientKind": "git",
+    "useIgnoreFile": false
+  },
+  "files": {
+    "ignoreUnknown": false,
+    "includes": [
+      "**"
+    ]
+  },
   "assist": {
     "actions": {
       "source": {
@@ -178,6 +187,13 @@
     }
   },
   "overrides": [
-    { "includes": ["**/*.js", "**/*.mjs", "**/*.jsx", "**/*.ts", "**/*.tsx"] }
+    {
+      "includes": [
+        "**/*.spec.ts"
+      ],
+      "linter": {
+        "enabled": false
+      }
+    }
   ]
 }

@@ -1,0 +1,531 @@
+---
+alwaysApply: true
+---
+
+# NestJS Services Pattern
+
+## Service Structure
+
+NestJS services should follow this pattern:
+
+```typescript
+import { Injectable, Logger, NotFoundException, ConflictException } from "@nestjs/common";
+import { I18nService } from "nestjs-i18n";
+
+import { ModuleRepository } from "./module.repository";
+import { CreateModuleDto, UpdateModuleDto } from "./dto";
+import { ModuleResponseDto } from "./dto/response.dto";
+
+@Injectable()
+export class ModuleService {
+  private readonly logger = new Logger(ModuleService.name);
+
+  constructor(
+    private readonly moduleRepository: ModuleRepository,
+    private readonly i18n: I18nService,
+  ) {}
+}
+```
+
+## CRUD Operations
+
+### Create
+
+```typescript
+async create(createDto: CreateModuleDto, userId: number): Promise<ModuleResponseDto> {
+  this.logger.log(`Creating new module with data: ${JSON.stringify(createDto)}`);
+
+  // Check for duplicates
+  const existing = await this.moduleRepository.findByName(createDto.name);
+  if (existing) {
+    throw new ConflictException(this.i18n.t("module.alreadyExists", {
+      lang: I18nContext.current().lang,
+    }));
+  }
+
+  try {
+    const module = await this.moduleRepository.create({
+      ...createDto,
+      createdBy: userId,
+    });
+
+    this.logger.log(`Module created successfully with ID: ${module.id}`);
+    return this.mapToResponseDto(module);
+  } catch (error) {
+    this.logger.error(`Failed to create module: ${error.message}`, error.stack);
+    throw error;
+  }
+}
+```
+
+### Find All
+
+```typescript
+async findAll(query?: QueryModuleDto): Promise<ModuleResponseDto[]> {
+  this.logger.log("Retrieving all modules");
+
+  try {
+    const modules = await this.moduleRepository.findAll(query);
+    
+    this.logger.log(`Retrieved ${modules.length} modules`);
+    return modules.map(module => this.mapToResponseDto(module));
+  } catch (error) {
+    this.logger.error(`Failed to retrieve modules: ${error.message}`, error.stack);
+    throw error;
+  }
+}
+```
+
+### Find One
+
+```typescript
+async findOne(id: number): Promise<ModuleResponseDto> {
+  this.logger.log(`Retrieving module with ID: ${id}`);
+
+  const module = await this.moduleRepository.findById(id);
+  if (!module) {
+    throw new NotFoundException(this.i18n.t("module.notFound", {
+      lang: I18nContext.current().lang,
+      args: { id },
+    }));
+  }
+
+  return this.mapToResponseDto(module);
+}
+```
+
+### Update
+
+```typescript
+async update(
+  id: number, 
+  updateDto: UpdateModuleDto, 
+  userId: number
+): Promise<ModuleResponseDto> {
+  this.logger.log(`Updating module ${id} with data: ${JSON.stringify(updateDto)}`);
+
+  // Check if module exists
+  const existing = await this.findOne(id);
+
+  // Check for name conflicts if name is being updated
+  if (updateDto.name && updateDto.name !== existing.name) {
+    const duplicate = await this.moduleRepository.findByName(updateDto.name);
+    if (duplicate) {
+      throw new ConflictException(this.i18n.t("module.nameConflict", {
+        lang: I18nContext.current().lang,
+      }));
+    }
+  }
+
+  try {
+    const updated = await this.moduleRepository.update(id, {
+      ...updateDto,
+      updatedBy: userId,
+    });
+
+    this.logger.log(`Module ${id} updated successfully`);
+    return this.mapToResponseDto(updated);
+  } catch (error) {
+    this.logger.error(`Failed to update module ${id}: ${error.message}`, error.stack);
+    throw error;
+  }
+}
+```
+
+### Delete
+
+```typescript
+async remove(id: number, userId: number): Promise<void> {
+  this.logger.log(`Deleting module with ID: ${id}`);
+
+  // Check if module exists
+  await this.findOne(id);
+
+  try {
+    await this.moduleRepository.delete(id, userId);
+    this.logger.log(`Module ${id} deleted successfully`);
+  } catch (error) {
+    this.logger.error(`Failed to delete module ${id}: ${error.message}`, error.stack);
+    throw error;
+  }
+}
+```
+
+## Advanced Operations
+
+### Soft Delete
+
+```typescript
+async softDelete(id: number, userId: number): Promise<void> {
+  this.logger.log(`Soft deleting module with ID: ${id}`);
+
+  const module = await this.moduleRepository.findById(id);
+  if (!module) {
+    throw new NotFoundException(this.i18n.t("module.notFound", {
+      lang: I18nContext.current().lang,
+    }));
+  }
+
+  if (module.deletedAt) {
+    throw new ConflictException(this.i18n.t("module.alreadyDeleted", {
+      lang: I18nContext.current().lang,
+    }));
+  }
+
+  await this.moduleRepository.softDelete(id, userId);
+}
+```
+
+### Restore
+
+```typescript
+async restore(id: number, userId: number): Promise<ModuleResponseDto> {
+  this.logger.log(`Restoring module with ID: ${id}`);
+
+  const module = await this.moduleRepository.findDeletedById(id);
+  if (!module) {
+    throw new NotFoundException(this.i18n.t("module.notFoundOrNotDeleted", {
+      lang: I18nContext.current().lang,
+    }));
+  }
+
+  const restored = await this.moduleRepository.restore(id, userId);
+  return this.mapToResponseDto(restored);
+}
+```
+
+### Search
+
+```typescript
+async search(searchDto: SearchModuleDto): Promise<ModuleResponseDto[]> {
+  this.logger.log(`Searching modules with criteria: ${JSON.stringify(searchDto)}`);
+
+  try {
+    const modules = await this.moduleRepository.search(searchDto);
+    return modules.map(module => this.mapToResponseDto(module));
+  } catch (error) {
+    this.logger.error(`Failed to search modules: ${error.message}`, error.stack);
+    throw error;
+  }
+}
+```
+
+### Pagination
+
+```typescript
+async findWithPagination(
+  query: PaginatedQueryModuleDto
+): Promise<PaginatedResponseDto<ModuleResponseDto>> {
+  this.logger.log(`Retrieving paginated modules: page=${query.page}, limit=${query.limit}`);
+
+  const { items, total } = await this.moduleRepository.findWithPagination(query);
+
+  return {
+    items: items.map(module => this.mapToResponseDto(module)),
+    pagination: {
+      page: query.page,
+      limit: query.limit,
+      total,
+      totalPages: Math.ceil(total / query.limit),
+    },
+  };
+}
+```
+
+## Business Logic
+
+### Validation
+
+```typescript
+private async validateCreateData(createDto: CreateModuleDto): Promise<void> {
+  // Custom business validation
+  if (createDto.name && createDto.name.length < 3) {
+    throw new BadRequestException(this.i18n.t("module.nameTooShort", {
+      lang: I18nContext.current().lang,
+    }));
+  }
+
+  // Check business rules
+  if (createDto.category && !await this.isCategoryValid(createDto.category)) {
+    throw new BadRequestException(this.i18n.t("module.invalidCategory", {
+      lang: I18nContext.current().lang,
+    }));
+  }
+}
+
+private async isCategoryValid(category: string): Promise<boolean> {
+  const categories = await this.moduleRepository.getValidCategories();
+  return categories.includes(category);
+}
+```
+
+### Data Processing
+
+```typescript
+async processModule(id: number): Promise<ModuleResponseDto> {
+  this.logger.log(`Processing module ${id}`);
+
+  const module = await this.findOne(id);
+
+  // Perform complex business logic
+  const processed = await this.moduleRepository.processModule(module);
+
+  // Send notifications
+  await this.notificationService.notifyModuleProcessed(module);
+
+  return this.mapToResponseDto(processed);
+}
+```
+
+### Batch Operations
+
+```typescript
+async createBatch(createDtos: CreateModuleDto[], userId: number): Promise<ModuleResponseDto[]> {
+  this.logger.log(`Creating batch of ${createDtos.length} modules`);
+
+  const results = [];
+
+  for (const createDto of createDtos) {
+    try {
+      const module = await this.create(createDto, userId);
+      results.push(module);
+    } catch (error) {
+      this.logger.warn(`Failed to create module in batch: ${error.message}`);
+      // Continue with other items or handle partial failures
+    }
+  }
+
+  return results;
+}
+```
+
+## Transactions
+
+### Database Transactions
+
+```typescript
+async createWithRelations(
+  createDto: CreateModuleDto, 
+  relations: CreateRelationsDto,
+  userId: number
+): Promise<ModuleResponseDto> {
+  this.logger.log(`Creating module with relations`);
+
+  return this.moduleRepository.transaction(async (tx) => {
+    // Create module
+    const module = await tx.module.create({
+      data: {
+        ...createDto,
+        createdBy: userId,
+      },
+    });
+
+    // Create related entities
+    if (relations.tags?.length) {
+      await tx.moduleTag.createMany({
+        data: relations.tags.map(tagId => ({
+          moduleId: module.id,
+          tagId,
+        })),
+      });
+    }
+
+    if (relations.categories?.length) {
+      await tx.moduleCategory.createMany({
+        data: relations.categories.map(categoryId => ({
+          moduleId: module.id,
+          categoryId,
+        })),
+      });
+    }
+
+    return this.mapToResponseDto(module);
+  });
+}
+```
+
+## Caching
+
+### Cache Implementation
+
+```typescript
+import { CACHE_MANAGER } from "@nestjs/cache-manager";
+import { Cache } from "cache-manager";
+
+@Injectable()
+export class ModuleService {
+  constructor(
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
+    private readonly moduleRepository: ModuleRepository,
+  ) {}
+
+  async findOne(id: number): Promise<ModuleResponseDto> {
+    const cacheKey = `module:${id}`;
+    
+    // Try to get from cache
+    let module = await this.cacheManager.get<any>(cacheKey);
+    
+    if (!module) {
+      // Get from database
+      module = await this.moduleRepository.findById(id);
+      if (!module) {
+        throw new NotFoundException();
+      }
+      
+      // Cache for 5 minutes
+      await this.cacheManager.set(cacheKey, module, 300000);
+    }
+
+    return this.mapToResponseDto(module);
+  }
+
+  async update(id: number, updateDto: UpdateModuleDto): Promise<ModuleResponseDto> {
+    const updated = await this.moduleRepository.update(id, updateDto);
+    
+    // Clear cache
+    await this.cacheManager.del(`module:${id}`);
+    
+    return this.mapToResponseDto(updated);
+  }
+}
+```
+
+## Event Emission
+
+### Using NestJS Event Emitter
+
+```typescript
+import { EventEmitter2 } from "@nestjs/event-emitter";
+
+@Injectable()
+export class ModuleService {
+  constructor(
+    private readonly eventEmitter: EventEmitter2,
+    private readonly moduleRepository: ModuleRepository,
+  ) {}
+
+  async create(createDto: CreateModuleDto, userId: number): Promise<ModuleResponseDto> {
+    const module = await this.moduleRepository.create({
+      ...createDto,
+      createdBy: userId,
+    });
+
+    // Emit event
+    this.eventEmitter.emit('module.created', {
+      moduleId: module.id,
+      userId,
+      timestamp: new Date(),
+    });
+
+    return this.mapToResponseDto(module);
+  }
+}
+```
+
+## Data Mapping
+
+### Entity to DTO Mapping
+
+```typescript
+private mapToResponseDto(module: ModuleEntity): ModuleResponseDto {
+  return {
+    id: module.id,
+    name: module.name,
+    description: module.description,
+    isActive: module.isActive,
+    createdAt: module.createdAt,
+    updatedAt: module.updatedAt,
+    // Include related data if needed
+    tags: module.tags?.map(tag => tag.name) || [],
+    category: module.category?.name || null,
+  };
+}
+
+private mapToResponseDtos(modules: ModuleEntity[]): ModuleResponseDto[] {
+  return modules.map(module => this.mapToResponseDto(module));
+}
+```
+
+## Error Handling
+
+### Custom Errors
+
+```typescript
+async create(createDto: CreateModuleDto, userId: number): Promise<ModuleResponseDto> {
+  try {
+    return await this.performCreate(createDto, userId);
+  } catch (error) {
+    if (error.code === 'DUPLICATE_KEY') {
+      throw new ConflictException(this.i18n.t("module.duplicate", {
+        lang: I18nContext.current().lang,
+      }));
+    }
+    
+    if (error.code === 'FOREIGN_KEY_CONSTRAINT') {
+      throw new BadRequestException(this.i18n.t("module.invalidReference", {
+        lang: I18nContext.current().lang,
+      }));
+    }
+
+    this.logger.error(`Unexpected error creating module: ${error.message}`, error.stack);
+    throw error;
+  }
+}
+```
+
+## Performance Optimization
+
+### Query Optimization
+
+```typescript
+async findAllWithRelations(): Promise<ModuleResponseDto[]> {
+  const modules = await this.moduleRepository.findAll({
+    include: {
+      category: true,
+      tags: true,
+      createdBy: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+    },
+    where: {
+      deletedAt: null,
+    },
+    orderBy: {
+      createdAt: 'desc',
+    },
+  });
+
+  return this.mapToResponseDtos(modules);
+}
+```
+
+### Bulk Operations
+
+```typescript
+async updateBulk(updateDtos: UpdateBulkModuleDto[], userId: number): Promise<number> {
+  this.logger.log(`Bulk updating ${updateDtos.length} modules`);
+
+  return this.moduleRepository.transaction(async (tx) => {
+    let updatedCount = 0;
+    
+    for (const { id, ...data } of updateDtos) {
+      const result = await tx.module.update({
+        where: { id },
+        data: {
+          ...data,
+          updatedBy: userId,
+        },
+      });
+      
+      if (result.count > 0) {
+        updatedCount++;
+      }
+    }
+    
+    return updatedCount;
+  });
+}
+```

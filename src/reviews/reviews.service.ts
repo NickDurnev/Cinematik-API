@@ -32,6 +32,10 @@ class ReviewsService {
   async deleteReview(userId: string): Promise<Review> {
     return await this.reviewsRepository.deleteReview(userId);
   }
+
+  async getUserReviews(userId: string): Promise<Review> {
+    return await this.reviewsRepository.getUserReviews(userId);
+  }
 }
 
 export default ReviewsService;

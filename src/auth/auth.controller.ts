@@ -1,6 +1,6 @@
 import { Body, Controller, Post } from "@nestjs/common";
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
-import { I18nContext, I18nService } from "nestjs-i18n";
+import { I18n, I18nContext, I18nService } from "nestjs-i18n";
 
 import { AuthData, ResponseCode, ResponseWrapper, TokensData } from "@/types";
 import { buildResponse } from "@/utils/response/response-wrapper";
@@ -68,14 +68,13 @@ export class AuthController {
   })
   async signIn(
     @Body() authSignInDto: AuthSignInDto,
+    @I18n() i18n: I18nService,
   ): Promise<ResponseWrapper<AuthData>> {
-    const data = await this.authService.SignIn(authSignInDto);
+    const data = await this.authService.SignIn(authSignInDto, i18n);
     return buildResponse({
       data,
       code: ResponseCode.OK,
-      message: this.i18n.t("auth.signInSuccessMessage", {
-        lang: I18nContext.current().lang,
-      }),
+      message: i18n.t("auth.signInSuccessMessage"),
     });
   }
 

@@ -23,13 +23,16 @@ import ProfileModule from "./profile/profile.module";
     I18nModule.forRootAsync({
       useFactory: () => ({
         fallbackLanguage: "en",
+        supportedLanguages: ["en", "ua"],
         loaderOptions: {
           path: join(process.cwd(), "dist/i18n"),
           watch: true,
         },
         typesOutputPath: join(__dirname, "../../generated/i18n.generated.ts"),
       }),
-      resolvers: [new HeaderResolver(["X-Accept-Language"])],
+      resolvers: [
+        new HeaderResolver(["x-accept-language", "X-Accept-Language"]),
+      ],
     }),
     ReviewsModule,
     MoviesModule,

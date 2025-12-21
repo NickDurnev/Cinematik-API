@@ -21,7 +21,7 @@ class CreateMovieDto {
   })
   @IsString()
   @IsOptional()
-  poster_path: string;
+  poster_path?: string;
 
   @ApiProperty({
     description: "Movie category",
@@ -65,7 +65,7 @@ class CreateMovieDto {
   })
   @IsOptional()
   @IsString()
-  tagline: string;
+  tagline?: string;
 
   @ApiProperty({
     description: "Runtime of the movie",
@@ -73,7 +73,7 @@ class CreateMovieDto {
   })
   @IsOptional()
   @IsNumber()
-  runtime: number;
+  runtime?: number;
 
   @ApiProperty({
     description: "Budget of the movie",
@@ -81,7 +81,7 @@ class CreateMovieDto {
   })
   @IsOptional()
   @IsNumber()
-  budget: number;
+  budget?: number;
 
   @ApiProperty({
     description: "Overview of the movie",

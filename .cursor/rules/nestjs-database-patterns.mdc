@@ -1,0 +1,631 @@
+---
+alwaysApply: true
+---
+
+# NestJS Database Patterns
+
+## Database Setup
+
+### Database Module
+
+```typescript
+import { Global, Module } from "@nestjs/common";
+import { ConfigModule, ConfigService } from "@nestjs/config";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
+
+import { DatabaseService } from "./database.service";
+
+@Global()
+@Module({
+  imports: [ConfigModule],
+  providers: [DatabaseService, DrizzleProvider],
+  exports: [DatabaseService],
+})
+export class DatabaseModule {}
+```
+
+### Database Service
+
+```typescript
+import { Injectable, Logger } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
+import * as schema from "./schema";
+
+@Injectable()
+export class DatabaseService {
+  private readonly logger = new Logger(DatabaseService.name);
+  private client: ReturnType<typeof postgres>;
+  public db: ReturnType<typeof drizzle>;
+
+  constructor(private readonly configService: ConfigService) {
+    this.initializeConnection();
+  }
+
+  private initializeConnection() {
+    const connectionString = this.configService.get<string>("DATABASE_URL");
+    
+    this.client = postgres(connectionString, {
+      max: 10, // Connection pool size
+      idle_timeout: 20,
+      connect_timeout: 10,
+    });
+
+    this.db = drizzle(this.client, { 
+      schema,
+      logger: process.env.NODE_ENV === "development" ? {
+        logQuery: (query, params) => {
+          this.logger.debug(`Query: ${query} - Params: ${JSON.stringify(params)}`);
+        },
+      } : false,
+    });
+
+    this.logger.log("Database connection initialized");
+  }
+
+  async onModuleDestroy() {
+    await this.client.end();
+    this.logger.log("Database connection closed");
+  }
+
+  get transaction() {
+    return this.db.transaction.bind(this.db);
+  }
+}
+```
+
+## Repository Pattern
+
+### Base Repository
+
+```typescript
+import { Injectable } from "@nestjs/common";
+import { DatabaseService } from "../database/database.service";
+
+@Injectable()
+export abstract class BaseRepository<T> {
+  constructor(protected readonly db: DatabaseService) {}
+
+  protected abstract getTable(): any;
+
+  async create(data: Partial<T>): Promise<T> {
+    const [result] = await this.db.db
+      .insert(this.getTable())
+      .values(data as any)
+      .returning();
+    return result;
+  }
+
+  async findById(id: number): Promise<T | null> {
+    const [result] = await this.db.db
+      .select()
+      .from(this.getTable())
+      .where(eq(this.getTable().id, id))
+      .limit(1);
+    return result || null;
+  }
+
+  async findAll(): Promise<T[]> {
+    return this.db.db.select().from(this.getTable());
+  }
+
+  async update(id: number, data: Partial<T>): Promise<T> {
+    const [result] = await this.db.db
+      .update(this.getTable())
+      .set(data as any)
+      .where(eq(this.getTable().id, id))
+      .returning();
+    return result;
+  }
+
+  async delete(id: number): Promise<void> {
+    await this.db.db
+      .delete(this.getTable())
+      .where(eq(this.getTable().id, id));
+  }
+}
+```
+
+### Module Repository
+
+```typescript
+import { Injectable } from "@nestjs/common";
+import { eq, and, ilike, desc, isNull } from "drizzle-orm";
+import { moduleTable } from "./schema";
+import { CreateModuleDto, UpdateModuleDto, QueryModuleDto } from "./dto";
+import { BaseRepository } from "../base/base.repository";
+
+@Injectable()
+export class ModuleRepository extends BaseRepository<typeof moduleTable.$inferSelect> {
+  constructor(db: DatabaseService) {
+    super(db);
+  }
+
+  protected getTable() {
+    return moduleTable;
+  }
+
+  async create(data: CreateModuleDto & { createdBy: number }): Promise<typeof moduleTable.$inferSelect> {
+    return super.create(data);
+  }
+
+  async findById(id: number): Promise<typeof moduleTable.$inferSelect | null> {
+    const [result] = await this.db.db
+      .select()
+      .from(moduleTable)
+      .where(and(
+        eq(moduleTable.id, id),
+        isNull(moduleTable.deletedAt)
+      ))
+      .limit(1);
+    return result || null;
+  }
+
+  async findAll(query?: QueryModuleDto): Promise<typeof moduleTable.$inferSelect[]> {
+    let dbQuery = this.db.db
+      .select()
+      .from(moduleTable)
+      .where(isNull(moduleTable.deletedAt));
+
+    if (query?.search) {
+      dbQuery = dbQuery.where(
+        and(
+          isNull(moduleTable.deletedAt),
+          ilike(moduleTable.name, `%${query.search}%`)
+        )
+      );
+    }
+
+    if (query?.isActive !== undefined) {
+      dbQuery = dbQuery.where(
+        and(
+          isNull(moduleTable.deletedAt),
+          eq(moduleTable.isActive, query.isActive)
+        )
+      );
+    }
+
+    return dbQuery.orderBy(desc(moduleTable.createdAt));
+  }
+
+  async findByName(name: string): Promise<typeof moduleTable.$inferSelect | null> {
+    const [result] = await this.db.db
+      .select()
+      .from(moduleTable)
+      .where(and(
+        eq(moduleTable.name, name),
+        isNull(moduleTable.deletedAt)
+      ))
+      .limit(1);
+    return result || null;
+  }
+
+  async findWithPagination(
+    query: QueryModuleDto
+  ): Promise<{ items: typeof moduleTable.$inferSelect[]; total: number }> {
+    // Get total count
+    const [{ count }] = await this.db.db
+      .select({ count: count() })
+      .from(moduleTable)
+      .where(isNull(moduleTable.deletedAt));
+
+    // Get paginated results
+    const items = await this.db.db
+      .select()
+      .from(moduleTable)
+      .where(isNull(moduleTable.deletedAt))
+      .limit(query.limit || 10)
+      .offset((query.page || 1 - 1) * (query.limit || 10))
+      .orderBy(desc(moduleTable.createdAt));
+
+    return { items, total: Number(count) };
+  }
+
+  async update(
+    id: number, 
+    data: UpdateModuleDto & { updatedBy?: number }
+  ): Promise<typeof moduleTable.$inferSelect> {
+    const [result] = await this.db.db
+      .update(moduleTable)
+      .set({ ...data, updatedAt: new Date() })
+      .where(and(
+        eq(moduleTable.id, id),
+        isNull(moduleTable.deletedAt)
+      ))
+      .returning();
+    return result;
+  }
+
+  async softDelete(id: number, userId: number): Promise<void> {
+    await this.db.db
+      .update(moduleTable)
+      .set({ 
+        deletedAt: new Date(), 
+        deletedBy: userId,
+        updatedAt: new Date() 
+      })
+      .where(eq(moduleTable.id, id));
+  }
+
+  async findDeletedById(id: number): Promise<typeof moduleTable.$inferSelect | null> {
+    const [result] = await this.db.db
+      .select()
+      .from(moduleTable)
+      .where(and(
+        eq(moduleTable.id, id),
+        isNotNull(moduleTable.deletedAt)
+      ))
+      .limit(1);
+    return result || null;
+  }
+
+  async restore(id: number, userId: number): Promise<typeof moduleTable.$inferSelect> {
+    const [result] = await this.db.db
+      .update(moduleTable)
+      .set({ 
+        deletedAt: null, 
+        deletedBy: null,
+        updatedBy: userId,
+        updatedAt: new Date() 
+      })
+      .where(eq(moduleTable.id, id))
+      .returning();
+    return result;
+  }
+
+  async search(searchDto: SearchModuleDto): Promise<typeof moduleTable.$inferSelect[]> {
+    let query = this.db.db
+      .select()
+      .from(moduleTable)
+      .where(and(
+        isNull(moduleTable.deletedAt),
+        eq(moduleTable.isActive, true)
+      ));
+
+    if (searchDto.name) {
+      query = query.where(and(
+        isNull(moduleTable.deletedAt),
+        ilike(moduleTable.name, `%${searchDto.name}%`)
+      ));
+    }
+
+    if (searchDto.description) {
+      query = query.where(and(
+        isNull(moduleTable.deletedAt),
+        ilike(moduleTable.description, `%${searchDto.description}%`)
+      ));
+    }
+
+    return query.orderBy(desc(moduleTable.createdAt));
+  }
+}
+```
+
+## Schema Definition
+
+### Drizzle Schema
+
+```typescript
+import { 
+  pgTable, 
+  serial, 
+  text, 
+  timestamp, 
+  boolean, 
+  integer,
+  pgEnum,
+  index,
+} from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
+import { userTable } from "./user.schema";
+import { categoryTable } from "./category.schema";
+
+// Enums
+export const moduleStatusEnum = pgEnum("module_status", ["active", "inactive", "archived"]);
+
+// Main table
+export const moduleTable = pgTable(
+  "modules",
+  {
+    id: serial("id").primaryKey(),
+    name: text("name").notNull(),
+    description: text("description"),
+    status: moduleStatusEnum("status").default("active"),
+    isActive: boolean("is_active").default(true),
+    createdBy: integer("created_by").notNull(),
+    updatedBy: integer("updated_by"),
+    deletedBy: integer("deleted_by"),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+    deletedAt: timestamp("deleted_at"),
+  },
+  (table) => ({
+    nameIdx: index("modules_name_idx").on(table.name),
+    createdByIdx: index("modules_created_by_idx").on(table.createdBy),
+    statusIdx: index("modules_status_idx").on(table.status),
+  })
+);
+
+// Relations
+export const moduleRelations = relations(moduleTable, ({ one, many }) => ({
+  creator: one(userTable, {
+    fields: [moduleTable.createdBy],
+    references: [userTable.id],
+  }),
+  updater: one(userTable, {
+    fields: [moduleTable.updatedBy],
+    references: [userTable.id],
+  }),
+  deleter: one(userTable, {
+    fields: [moduleTable.deletedBy],
+    references: [userTable.id],
+  }),
+  category: one(categoryTable, {
+    fields: [moduleTable.categoryId],
+    references: [categoryTable.id],
+  }),
+  tags: many(moduleTagTable),
+}));
+
+// Junction table for many-to-many relationships
+export const moduleTagTable = pgTable(
+  "module_tags",
+  {
+    moduleId: integer("module_id").notNull().references(() => moduleTable.id, { onDelete: "cascade" }),
+    tagId: integer("tag_id").notNull().references(() => tagTable.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  (table) => ({
+    pk: index("module_tags_pk").on(table.moduleId, table.tagId),
+  })
+);
+
+// Tag table
+export const tagTable = pgTable(
+  "tags",
+  {
+    id: serial("id").primaryKey(),
+    name: text("name").notNull().unique(),
+    description: text("description"),
+    createdAt: timestamp("created_at").defaultNow(),
+  }
+);
+
+export const moduleTagRelations = relations(moduleTagTable, ({ one }) => ({
+  module: one(moduleTable, {
+    fields: [moduleTagTable.moduleId],
+    references: [moduleTable.id],
+  }),
+  tag: one(tagTable, {
+    fields: [moduleTagTable.tagId],
+    references: [tagTable.id],
+  }),
+}));
+
+export const tagRelations = relations(tagTable, ({ many }) => ({
+  modules: many(moduleTagTable),
+}));
+```
+
+## Database Operations
+
+### Transactions
+
+```typescript
+async createWithRelations(
+  data: CreateModuleDto,
+  tagIds: number[],
+  userId: number
+): Promise<typeof moduleTable.$inferSelect> {
+  return this.db.transaction(async (tx) => {
+    // Create module
+    const [module] = await tx
+      .insert(moduleTable)
+      .values({
+        ...data,
+        createdBy: userId,
+      })
+      .returning();
+
+    // Create module-tag relationships
+    if (tagIds.length > 0) {
+      await tx.insert(moduleTagTable).values(
+        tagIds.map(tagId => ({
+          moduleId: module.id,
+          tagId,
+        }))
+      );
+    }
+
+    return module;
+  });
+}
+```
+
+### Complex Queries
+
+```typescript
+async findWithRelations(id: number): Promise<any> {
+  return this.db.db
+    .select({
+      module: moduleTable,
+      creator: {
+        id: userTable.id,
+        name: userTable.name,
+        email: userTable.email,
+      },
+      tags: {
+        id: tagTable.id,
+        name: tagTable.name,
+      },
+    })
+    .from(moduleTable)
+    .leftJoin(userTable, eq(moduleTable.createdBy, userTable.id))
+    .leftJoin(moduleTagTable, eq(moduleTable.id, moduleTagTable.moduleId))
+    .leftJoin(tagTable, eq(moduleTagTable.tagId, tagTable.id))
+    .where(and(
+      eq(moduleTable.id, id),
+      isNull(moduleTable.deletedAt)
+    ));
+}
+
+async findByCategoryWithStats(categoryId: number): Promise<any> {
+  return this.db.db
+    .select({
+      category: categoryTable,
+      totalModules: count(moduleTable.id),
+      activeModules: sql<number>`
+        CASE WHEN ${moduleTable.isActive} = true THEN 1 ELSE 0 END
+      `.mapWith(Number),
+      recentlyCreated: sql<boolean>`
+        ${moduleTable.createdAt} > NOW() - INTERVAL '30 days'
+      `.mapWith(Boolean),
+    })
+    .from(categoryTable)
+    .leftJoin(moduleTable, and(
+      eq(categoryTable.id, moduleTable.categoryId),
+      isNull(moduleTable.deletedAt)
+    ))
+    .where(eq(categoryTable.id, categoryId))
+    .groupBy(categoryTable.id);
+}
+```
+
+### Raw Queries
+
+```typescript
+async getCustomStats(): Promise<any> {
+  const result = await this.db.db.execute(sql`
+    SELECT 
+      DATE_TRUNC('month', created_at) as month,
+      COUNT(*) as total_modules,
+      COUNT(*) FILTER (WHERE is_active = true) as active_modules
+    FROM modules
+    WHERE deleted_at IS NULL
+    GROUP BY DATE_TRUNC('month', created_at)
+    ORDER BY month DESC
+    LIMIT 12
+  `);
+  
+  return result;
+}
+```
+
+## Migration Management
+
+### Migration File
+
+```typescript
+import { pgTable, serial, text, boolean, timestamp } from "drizzle-orm/pg-core";
+
+export const up = async (db: any) => {
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS modules (
+      id SERIAL PRIMARY KEY,
+      name VARCHAR(255) NOT NULL,
+      description TEXT,
+      is_active BOOLEAN DEFAULT true,
+      created_by INTEGER NOT NULL REFERENCES users(id),
+      updated_by INTEGER REFERENCES users(id),
+      deleted_by INTEGER REFERENCES users(id),
+      created_at TIMESTAMP DEFAULT NOW(),
+      updated_at TIMESTAMP DEFAULT NOW(),
+      deleted_at TIMESTAMP
+    );
+    
+    CREATE INDEX IF NOT EXISTS modules_name_idx ON modules(name);
+    CREATE INDEX IF NOT EXISTS modules_created_by_idx ON modules(created_by);
+    CREATE INDEX IF NOT EXISTS modules_deleted_at_idx ON modules(deleted_at);
+  `);
+};
+
+export const down = async (db: any) => {
+  await db.execute(sql`DROP TABLE IF EXISTS modules`);
+};
+```
+
+### Migration Runner
+
+```typescript
+import { Injectable, Logger } from "@nestjs/common";
+import { migrate } from "drizzle-orm/postgres-js/migrator";
+import { DatabaseService } from "./database.service";
+
+@Injectable()
+export class MigrationService {
+  private readonly logger = new Logger(MigrationService.name);
+
+  constructor(private readonly db: DatabaseService) {}
+
+  async runMigrations() {
+    this.logger.log("Running database migrations...");
+    
+    try {
+      await migrate(this.db.db, {
+        migrationsFolder: "./drizzle",
+      });
+      this.logger.log("Migrations completed successfully");
+    } catch (error) {
+      this.logger.error("Migration failed", error);
+      throw error;
+    }
+  }
+}
+```
+
+## Testing Database Operations
+
+### Test Database Setup
+
+```typescript
+import { Test, TestingModule } from "@nestjs/testing";
+import { DatabaseService } from "./database.service";
+import { ModuleRepository } from "./module.repository";
+
+describe("ModuleRepository", () => {
+  let repository: ModuleRepository;
+  let db: DatabaseService;
+
+  beforeEach(async () => {
+    const testDb = await Test.createTestingModule({
+      providers: [
+        DatabaseService,
+        ModuleRepository,
+      ],
+    })
+      .overrideProvider(DatabaseService)
+      .useValue({
+        db: mockDrizzleDb,
+        transaction: jest.fn(),
+      })
+      .compile();
+
+    db = testDb.get<DatabaseService>(DatabaseService);
+    repository = testDb.get<ModuleRepository>(ModuleRepository);
+  });
+});
+```
+
+### Test Data Factory
+
+```typescript
+export class ModuleFactory {
+  static create(overrides: Partial<typeof moduleTable.$inferInsert> = {}) {
+    return {
+      name: "Test Module",
+      description: "Test Description",
+      isActive: true,
+      createdBy: 1,
+      ...overrides,
+    };
+  }
+
+  static createMany(count: number) {
+    return Array.from({ length: count }, (_, i) => 
+      this.create({ name: `Test Module ${i + 1}` })
+    );
+  }
+}
+```

@@ -9,7 +9,7 @@ import {
 import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 import * as bcrypt from "bcrypt";
-import { I18nContext, I18nService } from "nestjs-i18n";
+import { I18n, I18nContext, I18nService } from "nestjs-i18n";
 
 import EmailService from "@/common/services/email.service";
 import FormatDataService from "@/common/services/format-data.service";
@@ -90,7 +90,10 @@ export class AuthService {
     return { tokens, user: userData };
   }
 
-  async SignIn(authSignInDto: AuthSignInDto): Promise<AuthData> {
+  async SignIn(
+    authSignInDto: AuthSignInDto,
+    @I18n() i18n: I18nService,
+  ): Promise<AuthData> {
     const { email, password } = authSignInDto;
     const user = await this.usersRepository.findByEmail(email);
 
@@ -103,11 +106,7 @@ export class AuthService {
       const userData = await this.formatDataService.formatUserData(user);
       return { tokens, user: userData };
     } else {
-      throw new UnauthorizedException(
-        this.i18n.t("auth.invalidLoginCredentials", {
-          lang: I18nContext.current().lang,
-        }),
-      );
+      throw new UnauthorizedException(i18n.t("auth.invalidLoginCredentials"));
     }
   }
 
