@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirm Your Email - Cinematik</title>
+   {{> styles }}
+</head>
+<body>
+    <div class="container">
+        {{> header }}
+        <div class="content">
+            <div class="greeting">Hello {{userName}},</div>
+            <div class="message">
+                {{#if isNewAccount}}
+                Welcome to Cinematik! We're excited to have you on board.
+                Before you can start exploring, please confirm your email address by clicking the button below.
+                {{else}}
+                We noticed you've updated your email address. 
+                Please confirm your new email to continue using all features of your account.
+                {{/if}}
+            </div>
+            <div style="text-align: center;">
+                <a href="{{confirmationLink}}" class="reset-button">
+                    Confirm Email Address
+                </a>
+            </div>
+            <div class="expiry-note">
+                <p><strong>⏰ This link will expire in 24 hours for security reasons.</strong></p>
+            </div>
+            <div class="warning">
+                <h3>🔒 Security Notice</h3>
+                <p>
+                    {{#if isNewAccount}}
+                    If you didn't create an account with Cinematik, you can safely ignore this email.
+                    {{else}}
+                    If you didn't request this change, please contact our support team immediately.
+                    {{/if}}
+                    No further action is required.
+                </p>
+            </div>
+            <div class="message">
+                If the button above doesn't work, you can copy and paste the following link into your browser:
+                <br><br>
+                <a href="{{confirmationLink}}" style="color: #667eea; word-break: break-all;">{{confirmationLink}}</a>
+            </div>
+        </div>
+        {{#if isNewAccount}}
+        {{> footer footerNote="This email was sent to you because you signed up for a Cinematik account." }}
+        {{else}}
+        {{> footer footerNote="This email was sent to you because you updated your Cinematik account email." }}
+        {{/if}}
+    </div>
+</body>
+</html> 
+

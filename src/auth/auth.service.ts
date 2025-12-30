@@ -1,5 +1,3 @@
-import { randomBytes } from "crypto";
-
 import {
   ConflictException,
   Injectable,
@@ -13,6 +11,7 @@ import { I18n, I18nContext, I18nService } from "nestjs-i18n";
 
 import EmailService from "@/common/services/email.service";
 import FormatDataService from "@/common/services/format-data.service";
+import { TokenService } from "@/common/services/token.service";
 import { AuthData, TokensData } from "@/types";
 
 import {
@@ -31,6 +30,7 @@ export class AuthService {
     private configService: ConfigService,
     private emailService: EmailService,
     private formatDataService: FormatDataService,
+    private tokenService: TokenService,
     private readonly i18n: I18nService,
   ) {}
 
@@ -51,6 +51,24 @@ export class AuthService {
       await this.usersRepository.createUserByCredentials(authCredentialsDto);
 
     if (user) {
+      // Generate confirmation token
+      const { token: confirmationToken, expiresAt } =
+        this.tokenService.generateToken(24);
+
+      // Save confirmation token to database
+      await this.usersRepository.createUserToken(
+        user.id,
+        confirmationToken,
+        "email_confirmation",
+        expiresAt,
+      );
+
+      // Create confirmation link
+      const confirmationLink = `${this.configService.get("CLIENT_APP_BASE_URL")}/confirm-email?token=${confirmationToken}`;
+
+      // Send email
+      await this.emailService.sendConfirmEmail(user, confirmationLink, true);
+
       const tokens = await this.generateTokens({
         name: user.name,
         email: user.email,
@@ -98,6 +116,14 @@ export class AuthService {
     const user = await this.usersRepository.findByEmail(email);
 
     if (user && password && (await bcrypt.compare(password, user.password))) {
+      if (!user.email_confirmed) {
+        throw new UnauthorizedException(
+          this.i18n.t("auth.emailNotConfirmed", {
+            lang: I18nContext.current().lang,
+          }),
+        );
+      }
+
       const tokens = await this.generateTokens({
         name: user.name,
         email: user.email,
@@ -173,8 +199,10 @@ export class AuthService {
       );
     }
 
-    const userActiveToken =
-      await this.usersRepository.findValidPasswordResetTokenByUserId(user.id);
+    const userActiveToken = await this.usersRepository.findValidTokenByUserId(
+      user.id,
+      "reset_password",
+    );
 
     if (userActiveToken?.id) {
       throw new ConflictException(
@@ -185,13 +213,13 @@ export class AuthService {
     }
 
     // Generate reset token
-    const resetToken = this.generateResetToken();
-    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour from now
+    const { token: resetToken, expiresAt } = this.tokenService.generateToken(1);
 
     // Save reset token to database
-    await this.usersRepository.createPasswordResetToken(
+    await this.usersRepository.createUserToken(
       user.id,
       resetToken,
+      "reset_password",
       expiresAt,
     );
 
@@ -225,8 +253,10 @@ export class AuthService {
     newPassword: string,
   ): Promise<{ success: boolean; message: string }> {
     // Find valid reset token
-    const resetToken =
-      await this.usersRepository.findValidPasswordResetToken(token);
+    const resetToken = await this.usersRepository.findValidToken(
+      token,
+      "reset_password",
+    );
     if (!resetToken) {
       throw new NotFoundException(
         this.i18n.t("auth.invalidResetToken", {
@@ -242,7 +272,7 @@ export class AuthService {
     );
 
     // Mark token as used
-    await this.usersRepository.markPasswordResetTokenAsUsed(token);
+    await this.usersRepository.markTokenAsUsed(token);
 
     return {
       success: true,
@@ -252,15 +282,37 @@ export class AuthService {
     };
   }
 
-  async cleanupExpiredTokens(): Promise<void> {
-    try {
-      await this.usersRepository.deleteExpiredPasswordResetTokens();
-    } catch (error) {
-      console.error("Error cleaning up expired tokens:", error);
+  async confirmEmail(
+    token: string,
+  ): Promise<{ success: boolean; message: string }> {
+    // Find valid confirmation token
+    const confirmationToken = await this.usersRepository.findValidToken(
+      token,
+      "email_confirmation",
+    );
+    if (!confirmationToken) {
+      throw new NotFoundException(
+        this.i18n.t("auth.invalidConfirmationToken", {
+          lang: I18nContext.current().lang,
+        }),
+      );
     }
+
+    // Confirm user email
+    await this.usersRepository.confirmUserEmail(confirmationToken.user_id);
+
+    // Mark token as used
+    await this.usersRepository.markTokenAsUsed(token);
+
+    return {
+      success: true,
+      message: this.i18n.t("auth.emailConfirmedSuccessfully", {
+        lang: I18nContext.current().lang,
+      }),
+    };
   }
 
-  private generateResetToken(): string {
-    return randomBytes(32).toString("hex");
+  async cleanupExpiredTokens(): Promise<void> {
+    await this.tokenService.cleanupExpiredTokens();
   }
 }

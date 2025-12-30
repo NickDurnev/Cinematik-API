@@ -24,6 +24,10 @@ export type I18nTranslations = {
     updatePasswordFailed: string;
     createPasswordResetTokenFailed: string;
     profileNotFound: string;
+    invalidConfirmationToken: string;
+    emailConfirmedSuccessfully: string;
+    confirmEmailFailed: string;
+    emailNotConfirmed: string;
   };
   content: {
     movieCreated: string;

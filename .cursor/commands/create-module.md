@@ -51,7 +51,6 @@ Create a TODO list to track progress:
 14. Run tests and verify implementation
 15. Update test coverage in .cursor/context/test-coverage.md
 16. Update OpenAPI documentation
-17. Generate Postman collection
 ```
 
 ### Step 1: Analyze Module Requirements
@@ -1032,21 +1031,6 @@ npm run start:dev
 open http://localhost:3000/api
 ```
 
-### Step 17: Generate Postman Collection
-
-Use Postman CLI to generate collection:
-
-```bash
-# Install Newman CLI
-npm install -g newman
-
-# Generate Postman collection from OpenAPI spec
-newman convert swagger http://localhost:3000/api-json -o postman-collection.json
-
-# Import to Postman
-newman run postman-collection.json
-```
-
 ---
 
 ## Reference Files
@@ -1172,7 +1156,6 @@ Before marking module complete:
 
 **Documentation:**
 - [ ] OpenAPI/Swagger documentation
-- [ ] Postman collection generated
 - [ ] Code comments for complex logic
 - [ ] README updates if needed
 

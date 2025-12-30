@@ -22,6 +22,7 @@ export const UserDataSchema = {
     name: { type: "string" },
     email: { type: "string" },
     picture: { type: "string" },
+    email_confirmed: { type: "boolean" },
     is_left_review: { type: "boolean" },
   },
 };
@@ -88,6 +89,20 @@ export const ResetPasswordBody = {
       },
     },
     required: ["token", "newPassword"],
+  },
+};
+
+export const ConfirmEmailBody = {
+  schema: {
+    type: "object",
+    properties: {
+      token: {
+        type: "string",
+        description: "Email confirmation token from email",
+        example: "abc123def456...",
+      },
+    },
+    required: ["token"],
   },
 };
 
@@ -165,6 +180,20 @@ export const ForgotPasswordApiResponse = {
 export const ResetPasswordApiResponse = {
   status: 200,
   description: "Password reset successfully",
+  schema: {
+    type: "object",
+    properties: {
+      success: { type: "boolean" },
+      message: { type: "string" },
+      data: { type: "object" },
+      code: { type: "string" },
+    },
+  },
+};
+
+export const ConfirmEmailApiResponse = {
+  status: 200,
+  description: "Email confirmed successfully",
   schema: {
     type: "object",
     properties: {

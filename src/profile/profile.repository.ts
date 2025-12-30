@@ -7,6 +7,7 @@ import {
 import { eq } from "drizzle-orm";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { I18nContext, I18nService } from "nestjs-i18n";
+import * as bcrypt from "bcrypt";
 
 import { User, users } from "@/auth/schema";
 import { DATABASE_CONNECTION } from "@/database/database.connection";
@@ -39,9 +40,15 @@ class ProfileRepository {
 
   async updateProfile(
     userId: string,
-    updateProfileDto: UpdateProfileDto,
+    updateProfileDto: UpdateProfileDto & { email_confirmed?: boolean },
   ): Promise<User> {
-    const { name, email } = updateProfileDto;
+    const { name, email, newPassword, email_confirmed } = updateProfileDto;
+
+    let hashedPassword: string | undefined;
+    if (newPassword) {
+      const salt = await bcrypt.genSalt();
+      hashedPassword = await bcrypt.hash(newPassword, salt);
+    }
 
     try {
       const [updatedProfile] = await this.database
@@ -49,6 +56,8 @@ class ProfileRepository {
         .set({
           ...(name && { name }),
           ...(email && { email }),
+          ...(newPassword && { password: hashedPassword }),
+          ...(email_confirmed !== undefined && { email_confirmed }),
         })
         .where(eq(users.id, userId))
         .returning();

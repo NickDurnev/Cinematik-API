@@ -15,4 +15,4 @@ import ProfilesService from "./profile.service";
   providers: [ProfilesService, ProfilesRepository],
   exports: [ProfilesRepository],
 })
-export default class ReviewsModule {}
+export default class ProfileModule {}

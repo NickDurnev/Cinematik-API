@@ -4,13 +4,11 @@ import { JwtModule } from "@nestjs/jwt";
 import { PassportModule } from "@nestjs/passport";
 
 import { CommonModule } from "@/common/common.module";
-import EmailService from "@/common/services/email.service";
 
 import DatabaseModule from "../database/database.module";
 import { AuthController } from "./auth.controller";
 import { AuthService } from "./auth.service";
 import { JwtStrategy } from "./jwt.strategy";
-import UsersRepository from "./user.repository";
 
 @Module({
   imports: [
@@ -30,7 +28,7 @@ import UsersRepository from "./user.repository";
     CommonModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, UsersRepository, JwtStrategy, EmailService],
-  exports: [JwtStrategy, PassportModule],
+  providers: [AuthService, JwtStrategy],
+  exports: [JwtStrategy, PassportModule, AuthService],
 })
 export default class AuthModule {}

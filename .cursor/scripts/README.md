@@ -11,7 +11,6 @@ This directory contains utility scripts for the Cinematik API development workfl
   ```
 
 ### Setup Scripts
-- **`postman-setup.sh`** - Automated Postman CLI setup and configuration
 - **`setup-git-hooks.sh`** - Git hooks for code quality and consistency
 
 ## Module Generation
@@ -44,11 +43,6 @@ The `/create-module` command provides:
 
 ## Running Scripts
 
-### Postman Setup
-```bash
-bash .cursor/scripts/postman-setup.sh
-```
-
 ### Git Hooks Setup
 ```bash
 bash .cursor/scripts/setup-git-hooks.sh
@@ -68,7 +62,6 @@ All scripts require:
 
 Some scripts may require additional tools:
 - Drizzle Kit (for database operations)
-- Postman CLI (for collection generation)
 - Git (for hooks)
 
 ## Security Notes

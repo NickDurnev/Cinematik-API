@@ -1,5 +1,11 @@
-import { Body, Controller, Post } from "@nestjs/common";
-import { ApiBody, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
+import { Body, Controller, Post, Get, Query } from "@nestjs/common";
+import {
+  ApiBody,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+  ApiQuery,
+} from "@nestjs/swagger";
 import { I18n, I18nContext, I18nService } from "nestjs-i18n";
 
 import { AuthData, ResponseCode, ResponseWrapper, TokensData } from "@/types";
@@ -17,6 +23,7 @@ import {
   SignUpApiBody,
   SignUpApiResponse,
   SocialLoginApiBody,
+  ConfirmEmailApiResponse,
 } from "./auth.docs";
 import { AuthService } from "./auth.service";
 import {
@@ -25,6 +32,7 @@ import {
   AuthSocialDto,
   ForgotPasswordDto,
   ResetPasswordDto,
+  ConfirmEmailDto,
 } from "./dto/auth-credentials.dto";
 
 @ApiTags("Authentication")
@@ -155,6 +163,29 @@ export class AuthController {
       resetPasswordDto.token,
       resetPasswordDto.newPassword,
     );
+    return buildResponse({
+      data,
+      code: ResponseCode.OK,
+      message: data.message,
+    });
+  }
+
+  @Get("/confirm-email")
+  @ApiOperation({ summary: "Confirm email using token" })
+  @ApiQuery({
+    name: "token",
+    description: "Email confirmation token from email",
+  })
+  @ApiResponse(ConfirmEmailApiResponse)
+  @ApiResponse({ status: 400, description: "Bad request - invalid data" })
+  @ApiResponse({
+    status: 404,
+    description: "Not found - invalid or expired token",
+  })
+  async confirmEmail(
+    @Query() confirmEmailDto: ConfirmEmailDto,
+  ): Promise<ResponseWrapper<{ success: boolean; message: string }>> {
+    const data = await this.authService.confirmEmail(confirmEmailDto.token);
     return buildResponse({
       data,
       code: ResponseCode.OK,

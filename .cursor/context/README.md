@@ -8,7 +8,6 @@ This directory contains project context and configuration files for development 
 **Purpose**: OpenAPI 3.0 specification for the Cinematik API
 
 **What it's used for**:
-- **Postman Collection Generation**: Automatically generates Postman collections with `npm run postman:generate`
 - **API Documentation**: Source of truth for API endpoints and schemas
 - **Client SDK Generation**: Can be used to generate TypeScript/JavaScript client libraries
 - **Contract Testing**: Validates API responses against the schema
@@ -49,7 +48,6 @@ node scripts/generate-openapi-schema.js
 
 ### Postman Integration
 The OpenAPI schema is automatically used to:
-- Generate Postman collections
 - Create environment variables
 - Set up authentication flows
 - Generate test scripts
@@ -60,7 +58,6 @@ A workflow for keeping the schema current:
 2. Run tests to verify functionality
 3. Update OpenAPI decorators in controllers
 4. Generate new schema: `npm run openapi:generate`
-5. Test with Postman: `npm run postman:run`
 
 ### CI/CD Integration
 Add to your CI pipeline:
@@ -70,7 +67,6 @@ Add to your CI pipeline:
     npm run start:dev &
     sleep 10
     npm run openapi:generate
-    npm run postman:generate
 ```
 
 ## Best Practices
@@ -95,18 +91,6 @@ Add to your CI pipeline:
 - Maintain backward compatibility when possible
 
 ## Tools Integration
-
-### Postman CLI
-```bash
-# Generate collection from schema
-npm run postman:generate
-
-# Run tests with schema validation
-npm run postman:validate
-
-# Generate reports
-npm run postman:run:report
-```
 
 ### OpenAPI Tools
 ```bash
@@ -145,17 +129,9 @@ node scripts/generate-openapi-schema.js
 ```bash
 # Validate OpenAPI schema first
 npm run openapi:generate
-
-# Clear Postman cache
-rm -rf postman/collections/*.json
-npm run postman:generate
-
-# Test individual endpoints
-newman run postman/collections/cinematik-api.postman_collection.json --folder "Authentication"
 ```
 
 ### Documentation Updates
 - Update schema decorators in controllers
 - Regenerate schema: `npm run openapi:generate`
-- Verify with Postman: `npm run postman:validate`
 - Commit changes with descriptive message

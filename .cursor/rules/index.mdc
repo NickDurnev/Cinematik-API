@@ -66,7 +66,6 @@ src/
 ### Command Shortcuts
 - **Create Module**: `/create-module {module-name}` - Generates complete NestJS module
 - **Quality Check**: `npm run quality:check` - Runs all quality checks
-- **Postman**: `npm run postman:generate` - Generates Postman collection
 
 ### Code Standards
 - **TypeScript**: Strict mode enabled

@@ -2,6 +2,7 @@ import { join } from "path";
 
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
+import { ScheduleModule } from "@nestjs/schedule";
 import { HeaderResolver, I18nModule } from "nestjs-i18n";
 
 import { AppController } from "@/app.controller";
@@ -34,6 +35,7 @@ import ProfileModule from "./profile/profile.module";
         new HeaderResolver(["x-accept-language", "X-Accept-Language"]),
       ],
     }),
+    ScheduleModule.forRoot(),
     ReviewsModule,
     MoviesModule,
     AuthModule,

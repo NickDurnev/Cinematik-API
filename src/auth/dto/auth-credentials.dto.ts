@@ -46,3 +46,7 @@ export class ResetPasswordDto {
   @IsPassword()
   newPassword: string;
 }
+
+export class ConfirmEmailDto {
+  token: string;
+}

@@ -16,6 +16,7 @@ export class FormatDataService {
       email: user.email,
       picture: user.picture,
       is_left_review: !!userReview,
+      email_confirmed: user.email_confirmed,
     };
   }
 }
