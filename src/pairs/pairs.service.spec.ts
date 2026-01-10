@@ -10,6 +10,7 @@ import { TMDBService } from "@/common/services/tmdb.service";
 
 import { PairsService } from "./pairs.service";
 import { PairsRepository } from "./pairs.repository";
+import { PairsGateway } from "./pairs.gateway";
 import {
   SendPairRequestDto,
   PairRequestAction,
@@ -151,10 +152,24 @@ const mockTMDBService = {
   getTVGenres: jest.fn(),
 };
 
+// Mock WebSocket Gateway
+const mockPairsGateway = {
+  notifyPairRequest: jest.fn(),
+  notifyPairRequestResponse: jest.fn(),
+  notifySessionCreated: jest.fn(),
+  notifyFiltersProposed: jest.fn(),
+  notifyFiltersAccepted: jest.fn(),
+  notifySessionEnded: jest.fn(),
+  notifyPartnerSwiped: jest.fn(),
+  notifyMatch: jest.fn(),
+  notifyMatchWatchedUpdate: jest.fn(),
+};
+
 describe("PairsService", () => {
   let service: PairsService;
   let repository: PairsRepository;
   let tmdbService: TMDBService;
+  let gateway: PairsGateway;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -168,12 +183,17 @@ describe("PairsService", () => {
           provide: TMDBService,
           useValue: mockTMDBService,
         },
+        {
+          provide: PairsGateway,
+          useValue: mockPairsGateway,
+        },
       ],
     }).compile();
 
     service = module.get<PairsService>(PairsService);
     repository = module.get<PairsRepository>(PairsRepository);
     tmdbService = module.get<TMDBService>(TMDBService);
+    gateway = module.get<PairsGateway>(PairsGateway);
   });
 
   afterEach(() => {

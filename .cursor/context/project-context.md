@@ -154,6 +154,33 @@ src/
 - `GET /pairs/:pairId/matches` - List matches
 - `PATCH /pairs/:pairId/matches/:matchId/watched` - Mark as watched
 
+### WebSocket Events (`/pairs` namespace)
+
+**Connection:**
+- URL: `ws://localhost:8080/pairs`
+- Authentication: JWT token via handshake auth or query
+- Auto-reconnection enabled
+
+**Client → Server:**
+- `join-pair` - Join pair room for real-time updates
+- `leave-pair` - Leave pair room
+- `typing` - Send typing indicator
+
+**Server → Client:**
+- `pair-request` - Incoming pair request notification
+- `pair-request-response` - Request accepted/rejected
+- `session-created` - New session started
+- `filters-proposed` - Partner proposed filters
+- `filters-accepted` - Filters accepted, session active
+- `session-ended` - Session completed
+- `partner-swiped` - Partner swiped on content
+- `match-found` - Both users swiped right
+- `match-watched-updated` - Match marked as watched
+- `user-online` / `user-offline` - Global user presence
+- `pair-user-online` / `pair-user-offline` - Pair partner presence
+- `partner-typing` - Partner activity indicator
+- `online-users` - List of all online users (on connect)
+
 ## Configuration
 
 ### Environment Variables
@@ -324,13 +351,18 @@ enum ResponseCode {
 - Mark content as watched
 - Scheduled cleanup of old swipes (30+ days)
 - Support for both movies and TV shows
+- **WebSocket real-time notifications** for all pair activities:
+  - Instant pair request notifications
+  - Live session updates (filters, matches)
+  - Partner swipe activity
+  - Presence indicators (online/offline)
+  - Typing indicators
 
 ## Planned Features
 
 - Advanced movie search and filtering
 - User recommendations based on viewing history
 - Movie ratings and statistics
-- WebSocket support for real-time pair notifications
 - Admin dashboard
 - API rate limiting
 - File upload for movie posters
@@ -348,7 +380,11 @@ enum ResponseCode {
   "@nestjs/jwt": "^11.0.0",
   "@nestjs/passport": "^11.0.5",
   "@nestjs/platform-express": "^11.1.3",
+  "@nestjs/platform-socket.io": "^11.x",
+  "@nestjs/websockets": "^11.x",
   "@nestjs/swagger": "^11.2.0",
+  "@nestjs/schedule": "^4.x",
+  "socket.io": "^4.x",
   "nestjs-i18n": "^10.5.1",
   "drizzle-orm": "^0.44.2",
   "drizzle-kit": "^0.31.1",

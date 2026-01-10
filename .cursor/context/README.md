@@ -54,6 +54,22 @@ node scripts/generate-openapi-schema.js
 - Testing standards and requirements
 - Recent testing achievements (Pairs: 31 tests)
 
+### implementations/
+
+**Purpose**: Client-side implementation guides for frontend developers
+
+**Files**:
+- `CLIENT_PAIRS_IMPLEMENTATION.md` - Complete guide for Pairs feature REST API integration
+- `CLIENT_WEBSOCKET_IMPLEMENTATION.md` - WebSocket real-time notifications implementation
+- `PAIR_MODE_IMPLEMENTATION.md` - Backend implementation details and architecture
+
+**What they contain**:
+- TypeScript types and interfaces
+- Service implementations
+- React Query hooks examples
+- Usage patterns and best practices
+- Testing strategies with MSW
+
 ## Automation
 
 ### Postman Integration

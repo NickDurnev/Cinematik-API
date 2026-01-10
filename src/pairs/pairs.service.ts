@@ -19,6 +19,7 @@ import {
   SendPairRequestDto,
   SwipeDirection,
 } from "./dto";
+import { PairsGateway } from "./pairs.gateway";
 import { PairsRepository } from "./pairs.repository";
 import {
   Pair,
@@ -35,6 +36,7 @@ export class PairsService {
   constructor(
     private readonly pairsRepository: PairsRepository,
     private readonly tmdbService: TMDBService,
+    private readonly pairsGateway: PairsGateway,
   ) {}
 
   // ==================== Pair Requests ====================
@@ -101,11 +103,24 @@ export class PairsService {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
 
-    return this.pairsRepository.createPairRequest(
+    const request = await this.pairsRepository.createPairRequest(
       user.id,
       requestedUser.id,
       expiresAt,
     );
+
+    // Emit real-time notification to requested user
+    this.pairsGateway.notifyPairRequest(requestedUser.id, {
+      ...request,
+      requester: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        picture: user.picture,
+      },
+    });
+
+    return request;
   }
 
   getPendingRequests(user: User): Promise<
@@ -160,6 +175,13 @@ export class PairsService {
         request.requested_id,
       );
     }
+
+    // Emit real-time notification to requester
+    this.pairsGateway.notifyPairRequestResponse(request.requester_id, {
+      request: updatedRequest,
+      pair,
+      accepted: action === PairRequestAction.ACCEPT,
+    });
 
     return { request: updatedRequest, pair };
   }
@@ -216,7 +238,16 @@ export class PairsService {
       );
     }
 
-    return this.pairsRepository.createSession(pairId, user.id, dto.mediaType);
+    const session = await this.pairsRepository.createSession(
+      pairId,
+      user.id,
+      dto.mediaType,
+    );
+
+    // Emit real-time notification
+    this.pairsGateway.notifySessionCreated(pairId, session);
+
+    return session;
   }
 
   async getActiveSession(
@@ -304,6 +335,11 @@ export class PairsService {
       },
     );
 
+    // Emit real-time notification
+    this.pairsGateway.notifyFiltersProposed(session.pair_id, {
+      session: updatedSession,
+    });
+
     return { session: updatedSession, filters };
   }
 
@@ -358,6 +394,11 @@ export class PairsService {
       },
     );
 
+    // Emit real-time notification
+    this.pairsGateway.notifyFiltersAccepted(session.pair_id, {
+      session: updatedSession,
+    });
+
     return { session: updatedSession, filters };
   }
 
@@ -385,9 +426,18 @@ export class PairsService {
     }
 
     // Update session to completed
-    return this.pairsRepository.updateSessionStatus(sessionId, "completed", {
-      ended_at: new Date(),
-    });
+    const completedSession = await this.pairsRepository.updateSessionStatus(
+      sessionId,
+      "completed",
+      {
+        ended_at: new Date(),
+      },
+    );
+
+    // Emit real-time notification
+    this.pairsGateway.notifySessionEnded(session.pair_id, completedSession);
+
+    return completedSession;
   }
 
   // ==================== Swiping ====================
@@ -519,6 +569,13 @@ export class PairsService {
       dto.direction,
     );
 
+    // Emit real-time notification to partner
+    this.pairsGateway.notifyPartnerSwiped(session.pair_id, user.id, {
+      tmdbId: dto.tmdbId,
+      direction: dto.direction,
+      userId: user.id,
+    });
+
     // If swipe is right, check for match
     if (dto.direction === SwipeDirection.RIGHT) {
       const oppositeSwipe = await this.pairsRepository.findOppositeUserSwipe(
@@ -556,6 +613,9 @@ export class PairsService {
           content?.poster_path || null,
           content?.overview || "",
         );
+
+        // Emit real-time notification for match
+        this.pairsGateway.notifyMatch(pair.id, match);
 
         return { matched: true, match };
       }
@@ -610,7 +670,18 @@ export class PairsService {
       throw new ForbiddenException("You are not part of this pair");
     }
 
-    return this.pairsRepository.updateMatchWatchedStatus(matchId, watched);
+    const updatedMatch = await this.pairsRepository.updateMatchWatchedStatus(
+      matchId,
+      watched,
+    );
+
+    // Emit real-time notification
+    this.pairsGateway.notifyMatchWatchedUpdate(match.pair_id, {
+      matchId,
+      markedWatched: watched,
+    });
+
+    return updatedMatch;
   }
 
   // ==================== Scheduled Jobs ====================
