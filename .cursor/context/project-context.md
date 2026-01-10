@@ -61,6 +61,14 @@ src/
 │   └── docs/              # Swagger docs
 ├── reviews/               # Reviews management
 ├── profile/               # User profile management
+├── pairs/                 # Pair mode for collaborative movie selection
+│   ├── pairs.module.ts
+│   ├── pairs.controller.ts
+│   ├── pairs.service.ts
+│   ├── pairs.repository.ts
+│   ├── schema.ts          # Drizzle schema
+│   ├── dto/
+│   └── pairs.docs.ts      # Swagger docs
 ├── database/              # Database configuration
 │   ├── database.module.ts
 │   ├── database.service.ts
@@ -69,7 +77,8 @@ src/
 │   ├── common.module.ts
 │   ├── services/
 │   │   ├── email.service.ts
-│   │   └── format-data.service.ts
+│   │   ├── format-data.service.ts
+│   │   └── tmdb.service.ts  # TMDB API integration
 │   └── templates/         # Email templates
 ├── i18n/                  # Internationalization files
 │   ├── en/
@@ -90,8 +99,15 @@ src/
 - **profiles** - User profiles
 
 ### Authentication Tables
-- **user_tokens** - JWT tokens
-- **password_resets** - Password reset tokens
+- **user_tokens** - JWT tokens for authentication
+
+### Pairs Tables (Collaborative Features)
+- **pair_requests** - Invite requests between users
+- **pairs** - Established friendships/pairs
+- **pair_sessions** - Swiping sessions with filters
+- **session_filters** - Filter proposals (year, genres)
+- **swipes** - Individual swipe records (left/right)
+- **pair_matches** - Matched content (shared watchlist)
 
 ## API Endpoints
 
@@ -122,6 +138,22 @@ src/
 - `PUT /profile` - Update user profile
 - `POST /profile/avatar` - Upload profile picture
 
+### Pairs (`/pairs`) - Collaborative Movie Selection
+- `POST /pairs/requests` - Send pair invite
+- `GET /pairs/requests` - List pending requests
+- `PATCH /pairs/requests/:id` - Accept/reject request
+- `GET /pairs` - List all pairs
+- `DELETE /pairs/:id` - Remove pair
+- `POST /pairs/:pairId/sessions` - Create swiping session
+- `GET /pairs/:pairId/sessions/active` - Get active session
+- `PATCH /pairs/:pairId/sessions/:sessionId/filters` - Propose filters
+- `POST /pairs/:pairId/sessions/:sessionId/filters/accept` - Accept filters
+- `POST /pairs/:pairId/sessions/:sessionId/end` - End session
+- `GET /pairs/sessions/:sessionId/next` - Get next content
+- `POST /pairs/sessions/:sessionId/swipe` - Record swipe
+- `GET /pairs/:pairId/matches` - List matches
+- `PATCH /pairs/:pairId/matches/:matchId/watched` - Mark as watched
+
 ## Configuration
 
 ### Environment Variables
@@ -129,6 +161,7 @@ src/
 - `DATABASE_URL` - PostgreSQL connection string
 - `JWT_SECRET` - JWT signing secret
 - `RESEND_API_KEY` - Email service API key
+- `TMDB_API_KEY` - The Movie Database API key
 
 ### Configuration Schema
 - `config.schema.ts` - Zod validation for environment variables
@@ -275,19 +308,33 @@ enum ResponseCode {
 | Movies | ✅ Complete | 5 endpoints | ✅ Unit + Integration |
 | Reviews | ✅ Complete | 5 endpoints | ✅ Unit + Integration |
 | Profile | ✅ Complete | 3 endpoints | ✅ Unit + Integration |
+| Pairs | ✅ Complete | 14 endpoints | ✅ Unit (31 tests) |
 | Database | ✅ Complete | - | ✅ Connection Tests |
+| TMDB Service | ✅ Complete | - | ✅ Integrated |
+
+## Recent Features
+
+### Pair Mode (v1.0 - Implemented)
+- **Tinder-style collaborative movie selection**
+- Send/accept pair invites by username or email
+- Create swiping sessions with custom filters (year, genres)
+- Mutual filter agreement required before swiping
+- Real-time match detection when both users swipe right
+- Shared watchlist for matched content
+- Mark content as watched
+- Scheduled cleanup of old swipes (30+ days)
+- Support for both movies and TV shows
 
 ## Planned Features
 
 - Advanced movie search and filtering
-- User recommendations
+- User recommendations based on viewing history
 - Movie ratings and statistics
-- Social features (follow, watchlists)
+- WebSocket support for real-time pair notifications
 - Admin dashboard
 - API rate limiting
 - File upload for movie posters
-- Email notifications
-- Password policies
+- Push notifications for pair requests
 - Two-factor authentication
 
 ## Dependencies

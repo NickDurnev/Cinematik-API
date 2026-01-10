@@ -33,16 +33,26 @@ node scripts/generate-openapi-schema.js
 
 **What it contains**:
 - Project architecture and technology stack
-- Module status and endpoints
+- Module status and endpoints (including Pairs module)
 - Development guidelines and patterns
 - Configuration and deployment information
 - Testing strategies and requirements
+- Recent features (Pair Mode collaborative selection)
 
 **Usage**:
 - Onboarding new developers
 - Reference for project structure
 - AI assistant context for code generation
 - Documentation for API design decisions
+
+### test-coverage.md
+**Purpose**: Track test implementation status across all modules
+
+**What it contains**:
+- Test coverage status for each module
+- Test implementation checklist
+- Testing standards and requirements
+- Recent testing achievements (Pairs: 31 tests)
 
 ## Automation
 
@@ -54,10 +64,12 @@ The OpenAPI schema is automatically used to:
 
 ### Schema Updates
 A workflow for keeping the schema current:
-1. Make API changes
+1. Make API changes (e.g., new Pairs endpoints)
 2. Run tests to verify functionality
 3. Update OpenAPI decorators in controllers
 4. Generate new schema: `npm run openapi:generate`
+5. Update project-context.md with new features
+6. Update test-coverage.md with test status
 
 ### CI/CD Integration
 Add to your CI pipeline:

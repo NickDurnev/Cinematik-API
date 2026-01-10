@@ -13,6 +13,7 @@ import MoviesModule from "@/movies/movies.module";
 import ReviewsModule from "@/reviews/reviews.module";
 
 import ProfileModule from "./profile/profile.module";
+import { PairsModule } from "./pairs/pairs.module";
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -41,6 +42,7 @@ import ProfileModule from "./profile/profile.module";
     AuthModule,
     DatabaseModule,
     ProfileModule,
+    PairsModule,
   ],
   controllers: [AppController],
 })

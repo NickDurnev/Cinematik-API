@@ -12,4 +12,5 @@ export const configValidationSchema = z.object({
   JWT_SECRET: z.string(),
   RESEND_API_KEY: z.string(),
   CLIENT_APP_BASE_URL: z.string(),
+  TMDB_API_KEY: z.string(),
 });
