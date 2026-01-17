@@ -75,6 +75,14 @@ class ProfileService {
   async deleteProfile(id: string): Promise<void> {
     await this.profileRepository.deleteProfile(id);
   }
+
+  async searchUsers(query: string): Promise<UserData[]> {
+    const users = await this.profileRepository.searchUsers(query);
+    const usersData = await Promise.all(
+      users.map(user => this.formatDataService.formatUserData(user)),
+    );
+    return usersData;
+  }
 }
 
 export default ProfileService;

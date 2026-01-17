@@ -8,10 +8,11 @@ import DatabaseModule from "@/database/database.module";
 import ProfileController from "./profile.controller";
 import ProfilesRepository from "./profile.repository";
 import ProfilesService from "./profile.service";
+import UsersController from "./users.controller";
 
 @Module({
   imports: [AuthModule, DatabaseModule, CommonModule, ConfigModule],
-  controllers: [ProfileController],
+  controllers: [ProfileController, UsersController],
   providers: [ProfilesService, ProfilesRepository],
   exports: [ProfilesRepository],
 })

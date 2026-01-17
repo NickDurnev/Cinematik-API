@@ -4,7 +4,7 @@ import {
   InternalServerErrorException,
   Logger,
 } from "@nestjs/common";
-import { eq } from "drizzle-orm";
+import { eq, ilike } from "drizzle-orm";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { I18nContext, I18nService } from "nestjs-i18n";
 import * as bcrypt from "bcrypt";
@@ -90,6 +90,23 @@ class ProfileRepository {
       return deletedProfile;
     } catch (error) {
       this.logger.error(`Failed to delete profile ${userId}`, error.stack);
+      throw new InternalServerErrorException();
+    }
+  }
+
+  async searchUsers(query: string): Promise<User[]> {
+    try {
+      const foundUsers = await this.database
+        .select()
+        .from(users)
+        .where(ilike(users.name, `%${query}%`));
+
+      return foundUsers;
+    } catch (error) {
+      this.logger.error(
+        `Failed to search users with query: ${query}`,
+        error.stack,
+      );
       throw new InternalServerErrorException();
     }
   }

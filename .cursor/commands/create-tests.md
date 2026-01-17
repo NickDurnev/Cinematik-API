@@ -59,7 +59,7 @@ Create a TODO list to track progress:
 
 ```
 1. Review module implementation (controller, service, repository)
-2. Create CONTROLLER tests in src/{module}/{module}.controller.spec.ts:
+2. Create CONTROLLER tests in src/{module}/{controller}.spec.ts (for each controller):
    - Mock service and auth dependencies
    - Write endpoint tests for all HTTP methods
    - Write error case tests
@@ -81,7 +81,7 @@ Create a TODO list to track progress:
 
 Before writing tests, understand what needs testing:
 
-1. **Check `src/{module}/{module}.controller.ts`** - List all endpoints:
+1. **Check `src/{module}/*.controller.ts`** - List all endpoints from all controllers in the module:
    - GET endpoints (single and list)
    - POST endpoints (create)
    - PUT/PATCH endpoints (update)

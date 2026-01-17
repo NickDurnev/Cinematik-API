@@ -136,7 +136,11 @@ src/
 ### Profile (`/profile`)
 - `GET /profile` - Get user profile
 - `PUT /profile` - Update user profile
+- `DELETE /profile` - Delete user profile
 - `POST /profile/avatar` - Upload profile picture
+
+### Users (`/users`)
+- `GET /users/search` - Search users by name
 
 ### Pairs (`/pairs`) - Collaborative Movie Selection
 - `POST /pairs/requests` - Send pair invite
