@@ -41,6 +41,7 @@ const mockUser: User = {
   name: "Test User",
   email: "test@example.com",
   password: "hashed_password",
+  email_confirmed: true,
   picture: "https://example.com/avatar.jpg",
   created_at: new Date("2023-12-01T10:00:00Z"),
   updated_at: new Date("2023-12-01T10:00:00Z"),

@@ -1,11 +1,12 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { I18nService } from "nestjs-i18n";
 
-import ReviewsService from "./reviews.service";
-import ReviewsRepository from "./reviews.repository";
-import { Review } from "./schema";
-import { CreateReviewDto, GetReviewsDto } from "./dto";
 import { User } from "@/auth/schema";
+
+import { CreateReviewDto, GetReviewsDto } from "./dto";
+import ReviewsRepository from "./reviews.repository";
+import ReviewsService from "./reviews.service";
+import { Review } from "./schema";
 
 // Mock I18nContext
 jest.mock("nestjs-i18n", () => ({
@@ -32,6 +33,7 @@ const mockUser: User = {
   id: "1",
   name: "Test User",
   email: "test@example.com",
+  email_confirmed: true,
   password: "hashed_password",
   picture: "https://example.com/avatar.jpg",
   created_at: new Date("2023-12-01T10:00:00Z"),

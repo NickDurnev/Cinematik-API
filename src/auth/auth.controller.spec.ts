@@ -30,6 +30,7 @@ const mockUserData = {
   id: "1",
   name: "Test User",
   email: "test@example.com",
+  email_confirmed: true,
   picture: "https://example.com/avatar.jpg",
   is_left_review: false,
 };

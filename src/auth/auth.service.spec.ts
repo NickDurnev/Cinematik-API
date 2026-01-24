@@ -11,6 +11,7 @@ import { I18nService } from "nestjs-i18n";
 
 import EmailService from "@/common/services/email.service";
 import FormatDataService from "@/common/services/format-data.service";
+import { TokenService } from "@/common/services/token.service";
 import { AuthData, TokensData, UserData } from "@/types";
 
 import { AuthService } from "./auth.service";
@@ -38,6 +39,7 @@ const mockUser = {
   name: "Test User",
   email: "test@example.com",
   password: "hashedPassword",
+  email_confirmed: true,
   picture: "https://example.com/avatar.jpg",
 };
 
@@ -45,6 +47,7 @@ const mockUserData: UserData = {
   id: "1",
   name: "Test User",
   email: "test@example.com",
+  email_confirmed: true,
   picture: "https://example.com/avatar.jpg",
   is_left_review: false,
 };
@@ -62,11 +65,11 @@ const mockUsersRepository = {
   createUserByCredentials: jest.fn(),
   createUserBySocial: jest.fn(),
   updateUserPassword: jest.fn(),
-  findValidPasswordResetTokenByUserId: jest.fn(),
-  createPasswordResetToken: jest.fn(),
-  findValidPasswordResetToken: jest.fn(),
-  markPasswordResetTokenAsUsed: jest.fn(),
-  deleteExpiredPasswordResetTokens: jest.fn(),
+  findValidTokenByUserId: jest.fn(),
+  createUserToken: jest.fn(),
+  findValidToken: jest.fn(),
+  markTokenAsUsed: jest.fn(),
+  deleteExpiredTokens: jest.fn(),
 };
 
 // Mock dependencies
@@ -89,10 +92,21 @@ const mockEmailService = {
   sendForgotPasswordEmail: jest
     .fn()
     .mockResolvedValue({ data: { id: "123" }, error: null }),
+  sendConfirmEmail: jest
+    .fn()
+    .mockResolvedValue({ data: { id: "123" }, error: null }),
 };
 
 const mockFormatDataService = {
   formatUserData: jest.fn().mockResolvedValue(mockUserData),
+};
+
+const mockTokenService = {
+  generateToken: jest.fn().mockReturnValue({
+    token: "token",
+    expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+  }),
+  cleanupExpiredTokens: jest.fn(),
 };
 
 describe("AuthService", () => {
@@ -122,6 +136,10 @@ describe("AuthService", () => {
         {
           provide: FormatDataService,
           useValue: mockFormatDataService,
+        },
+        {
+          provide: TokenService,
+          useValue: mockTokenService,
         },
         {
           provide: I18nService,
@@ -221,14 +239,12 @@ describe("AuthService", () => {
       const email = "test@example.com";
 
       mockUsersRepository.findByEmail.mockResolvedValue(mockUser);
-      mockUsersRepository.findValidPasswordResetTokenByUserId.mockResolvedValue(
-        null,
-      );
+      mockUsersRepository.findValidTokenByUserId.mockResolvedValue(null);
 
       const result = await service.forgotPassword(email);
 
       expect(repository.findByEmail).toHaveBeenCalledWith(email);
-      expect(repository.createPasswordResetToken).toHaveBeenCalled();
+      expect(repository.createUserToken).toHaveBeenCalled();
       expect(result.success).toBe(true);
     });
 
@@ -248,27 +264,24 @@ describe("AuthService", () => {
       const newPassword = "newPassword123";
       const mockResetToken = { user_id: "1", token: "valid_token" };
 
-      mockUsersRepository.findValidPasswordResetToken.mockResolvedValue(
-        mockResetToken,
-      );
+      mockUsersRepository.findValidToken.mockResolvedValue(mockResetToken);
 
       const result = await service.resetPassword(token, newPassword);
 
-      expect(repository.findValidPasswordResetToken).toHaveBeenCalledWith(
+      expect(repository.findValidToken).toHaveBeenCalledWith(
         token,
+        "reset_password",
       );
       expect(repository.updateUserPassword).toHaveBeenCalledWith(
         "1",
         newPassword,
       );
-      expect(repository.markPasswordResetTokenAsUsed).toHaveBeenCalledWith(
-        token,
-      );
+      expect(repository.markTokenAsUsed).toHaveBeenCalledWith(token);
       expect(result.success).toBe(true);
     });
 
     it("should throw NotFoundException if token is invalid", async () => {
-      mockUsersRepository.findValidPasswordResetToken.mockResolvedValue(null);
+      mockUsersRepository.findValidToken.mockResolvedValue(null);
 
       await expect(service.resetPassword("invalid", "pass")).rejects.toThrow(
         NotFoundException,

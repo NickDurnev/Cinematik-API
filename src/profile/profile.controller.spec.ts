@@ -14,6 +14,7 @@ import ProfilesService from "./profile.service";
 const mockUserData: UserData = {
   id: "1",
   name: "Test User",
+  email_confirmed: true,
   email: "test@example.com",
   picture: "https://example.com/avatar.jpg",
   is_left_review: false,
@@ -23,6 +24,7 @@ const mockUser: User = {
   id: "1",
   name: "Test User",
   email: "test@example.com",
+  email_confirmed: true,
   password: "hashed_password",
   picture: "https://example.com/avatar.jpg",
   created_at: new Date("2023-12-01T10:00:00Z"),

@@ -1,8 +1,8 @@
-import { Test, TestingModule } from "@nestjs/testing";
 import { ExecutionContext } from "@nestjs/common";
 import { AuthGuard } from "@nestjs/passport";
-import { I18nService } from "nestjs-i18n";
+import { Test, TestingModule } from "@nestjs/testing";
 import { Request } from "express";
+import { I18nService } from "nestjs-i18n";
 
 import { User } from "@/auth/schema";
 import { ResponseCode } from "@/types";
@@ -38,6 +38,7 @@ const mockUser: User = {
   id: "1",
   name: "Test User",
   email: "test@example.com",
+  email_confirmed: true,
   password: "hashed_password",
   picture: "https://example.com/avatar.jpg",
   created_at: new Date("2023-12-01T10:00:00Z"),
