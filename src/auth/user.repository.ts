@@ -6,17 +6,19 @@ import {
 import * as bcrypt from "bcrypt";
 import { and, eq, gt, lt } from "drizzle-orm";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
+import { I18nContext, I18nService } from "nestjs-i18n";
 
 import { DATABASE_CONNECTION } from "@/database/database.connection";
 
 import { AuthCredentialsDto, AuthSocialDto } from "./dto/auth-credentials.dto";
-import { PasswordResetToken, passwordResetTokens, User, users } from "./schema";
+import { User, userTokens, UserToken, users } from "./schema";
 
 @Injectable()
 class UsersRepository {
   constructor(
     @Inject(DATABASE_CONNECTION)
     private readonly database: NodePgDatabase,
+    private readonly i18n: I18nService,
   ) {}
 
   async createUserByCredentials(
@@ -37,7 +39,11 @@ class UsersRepository {
       return (await this.database.insert(users).values(user).returning())[0];
     } catch (error) {
       console.error("Database error during user creation:", error);
-      throw new InternalServerErrorException("Failed to create user");
+      throw new InternalServerErrorException(
+        this.i18n.t("auth.createUserFailed", {
+          lang: I18nContext.current().lang,
+        }),
+      );
     }
   }
 
@@ -48,12 +54,36 @@ class UsersRepository {
       name,
       email,
       picture,
+      email_confirmed: true,
     };
     try {
       return (await this.database.insert(users).values(user).returning())[0];
     } catch (error) {
       console.error("Database error during user creation:", error);
-      throw new InternalServerErrorException("Failed to create user");
+      throw new InternalServerErrorException(
+        this.i18n.t("auth.createUserFailed", {
+          lang: I18nContext.current().lang,
+        }),
+      );
+    }
+  }
+
+  async confirmUserEmail(userId: string): Promise<User> {
+    try {
+      return (
+        await this.database
+          .update(users)
+          .set({ email_confirmed: true })
+          .where(eq(users.id, userId))
+          .returning()
+      )[0];
+    } catch (error) {
+      console.error("Database error during email confirmation:", error);
+      throw new InternalServerErrorException(
+        this.i18n.t("auth.confirmEmailFailed", {
+          lang: I18nContext.current().lang,
+        }),
+      );
     }
   }
 
@@ -87,91 +117,93 @@ class UsersRepository {
       )[0];
     } catch (error) {
       console.error("Database error during password update:", error);
-      throw new InternalServerErrorException("Failed to update password");
+      throw new InternalServerErrorException(
+        this.i18n.t("auth.updatePasswordFailed", {
+          lang: I18nContext.current().lang,
+        }),
+      );
     }
   }
 
-  async deleteExpiredPasswordResetTokens(): Promise<void> {
+  async deleteExpiredTokens(): Promise<void> {
     const now = new Date();
     await this.database
-      .delete(passwordResetTokens)
-      .where(lt(passwordResetTokens.expires_at, now));
+      .delete(userTokens)
+      .where(lt(userTokens.expires_at, now));
   }
 
-  async createPasswordResetToken(
+  async createUserToken(
     userId: string,
     token: string,
+    type: "email_confirmation" | "reset_password",
     expiresAt: Date,
-  ): Promise<PasswordResetToken> {
+  ): Promise<UserToken> {
     try {
       return (
         await this.database
-          .insert(passwordResetTokens)
+          .insert(userTokens)
           .values({
             user_id: userId,
             token,
+            type,
             expires_at: expiresAt,
           })
           .returning()
       )[0];
     } catch (error) {
-      console.error(
-        "Database error during password reset token creation:",
-        error,
-      );
+      console.error("Database error during user token creation:", error);
       throw new InternalServerErrorException(
-        "Failed to create password reset token",
+        this.i18n.t("auth.createUserTokenFailed", {
+          lang: I18nContext.current().lang,
+        }),
       );
     }
   }
 
-  private async findValidPasswordResetTokenByField(
+  private async findValidTokenByField(
     field: "user_id" | "token",
     value: string,
-  ): Promise<PasswordResetToken | null> {
+    type: "email_confirmation" | "reset_password",
+  ): Promise<UserToken | null> {
     const now = new Date();
     const fieldCondition =
       field === "user_id"
-        ? eq(passwordResetTokens.user_id, value)
-        : eq(passwordResetTokens.token, value);
+        ? eq(userTokens.user_id, value)
+        : eq(userTokens.token, value);
 
     const tokens = await this.database
       .select()
-      .from(passwordResetTokens)
+      .from(userTokens)
       .where(
         and(
           fieldCondition,
-          eq(passwordResetTokens.used, "false"),
-          gt(passwordResetTokens.expires_at, now),
+          eq(userTokens.type, type),
+          eq(userTokens.used, "false"),
+          gt(userTokens.expires_at, now),
         ),
       );
     return tokens[0] || null;
   }
 
-  async findValidPasswordResetTokenByUserId(
+  async findValidTokenByUserId(
     userId: string,
-  ): Promise<PasswordResetToken | null> {
-    const res = await this.findValidPasswordResetTokenByField(
-      "user_id",
-      userId,
-    );
-
-    return res;
+    type: "email_confirmation" | "reset_password",
+  ): Promise<UserToken | null> {
+    return await this.findValidTokenByField("user_id", userId, type);
   }
 
-  async findValidPasswordResetToken(
+  async findValidToken(
     token: string,
-  ): Promise<PasswordResetToken | null> {
-    const res = await this.findValidPasswordResetTokenByField("token", token);
-
-    return res;
+    type: "email_confirmation" | "reset_password",
+  ): Promise<UserToken | null> {
+    return await this.findValidTokenByField("token", token, type);
   }
 
-  async markPasswordResetTokenAsUsed(token: string): Promise<void> {
+  async markTokenAsUsed(token: string): Promise<void> {
     await this.database
-      .update(passwordResetTokens)
+      .update(userTokens)
       .set({ used: "true" })
-      .where(eq(passwordResetTokens.token, token));
+      .where(eq(userTokens.token, token));
   }
 }
 

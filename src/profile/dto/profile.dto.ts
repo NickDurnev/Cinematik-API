@@ -1,4 +1,10 @@
-import { IsEmail, IsName } from "@/common/decorators/dto.decorators";
+import { IsOptional } from "class-validator";
+
+import {
+  IsEmail,
+  IsName,
+  IsPassword,
+} from "@/common/decorators/dto.decorators";
 
 export class UpdateProfileDto {
   @IsName()
@@ -6,4 +12,8 @@ export class UpdateProfileDto {
 
   @IsEmail()
   email: string;
+
+  @IsPassword()
+  @IsOptional()
+  newPassword?: string;
 }

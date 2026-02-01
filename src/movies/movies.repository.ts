@@ -6,6 +6,7 @@ import {
 } from "@nestjs/common";
 import { and, eq, sql } from "drizzle-orm";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
+import { I18nContext, I18nService } from "nestjs-i18n";
 
 import { User } from "@/auth/schema";
 import { DATABASE_CONNECTION } from "@/database/database.connection";
@@ -19,6 +20,7 @@ class MoviesRepository {
   constructor(
     @Inject(DATABASE_CONNECTION)
     private readonly database: NodePgDatabase,
+    private readonly i18n: I18nService,
   ) {}
 
   private logger = new Logger("MoviesRepository");
@@ -105,7 +107,11 @@ class MoviesRepository {
         .returning();
 
       if (!updatedMovie) {
-        throw new Error("Movie not found");
+        throw new Error(
+          this.i18n.t("content.movieNotFound", {
+            lang: I18nContext.current().lang,
+          }),
+        );
       }
 
       return updatedMovie;
@@ -126,7 +132,11 @@ class MoviesRepository {
         .returning();
 
       if (!deletedMovie) {
-        throw new Error("Movie not found");
+        throw new Error(
+          this.i18n.t("content.movieNotFound", {
+            lang: I18nContext.current().lang,
+          }),
+        );
       }
 
       return deletedMovie;

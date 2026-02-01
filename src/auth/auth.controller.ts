@@ -1,5 +1,12 @@
-import { Body, Controller, Post } from "@nestjs/common";
-import { ApiBody, ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
+import { Body, Controller, Post, Get, Query } from "@nestjs/common";
+import {
+  ApiBody,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+  ApiQuery,
+} from "@nestjs/swagger";
+import { I18n, I18nContext, I18nService } from "nestjs-i18n";
 
 import { AuthData, ResponseCode, ResponseWrapper, TokensData } from "@/types";
 import { buildResponse } from "@/utils/response/response-wrapper";
@@ -16,6 +23,7 @@ import {
   SignUpApiBody,
   SignUpApiResponse,
   SocialLoginApiBody,
+  ConfirmEmailApiResponse,
 } from "./auth.docs";
 import { AuthService } from "./auth.service";
 import {
@@ -24,14 +32,18 @@ import {
   AuthSocialDto,
   ForgotPasswordDto,
   ResetPasswordDto,
+  ConfirmEmailDto,
 } from "./dto/auth-credentials.dto";
 
 @ApiTags("Authentication")
 @Controller("auth")
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(
+    private authService: AuthService,
+    private readonly i18n: I18nService,
+  ) {}
 
-  @Post('/signup')
+  @Post("/signup")
   @ApiOperation({ summary: "Sign up new user" })
   @ApiBody(SignUpApiBody)
   @ApiResponse(SignUpApiResponse)
@@ -41,23 +53,40 @@ export class AuthController {
     @Body() authCredentialsDto: AuthCredentialsDto,
   ): Promise<ResponseWrapper<AuthData>> {
     const data = await this.authService.SignUp(authCredentialsDto);
-    return buildResponse({data, code: ResponseCode.OK, message: "User signed up successfully"});
+    return buildResponse({
+      data,
+      code: ResponseCode.OK,
+      message: this.i18n.t("auth.signUpSuccessMessage", {
+        lang: I18nContext.current().lang,
+      }),
+    });
   }
 
-  @Post('/signin')
+  @Post("/signin")
   @ApiOperation({ summary: "Sign in existing user" })
   @ApiBody(SignInApiBody)
   @ApiResponse(SignInApiResponse)
-  @ApiResponse({ status: 400, description: "Bad request - invalid credentials" })
-  @ApiResponse({ status: 401, description: "Unauthorized - invalid credentials" })
+  @ApiResponse({
+    status: 400,
+    description: "Bad request - invalid credentials",
+  })
+  @ApiResponse({
+    status: 401,
+    description: "Unauthorized - invalid credentials",
+  })
   async signIn(
     @Body() authSignInDto: AuthSignInDto,
+    @I18n() i18n: I18nService,
   ): Promise<ResponseWrapper<AuthData>> {
-    const data = await this.authService.SignIn(authSignInDto);
-    return buildResponse({data,code: ResponseCode.OK, message: "User signed in"});  
+    const data = await this.authService.SignIn(authSignInDto, i18n);
+    return buildResponse({
+      data,
+      code: ResponseCode.OK,
+      message: i18n.t("auth.signInSuccessMessage"),
+    });
   }
 
-  @Post('/social')
+  @Post("/social")
   @ApiOperation({ summary: "Social login (Google, Facebook, etc.)" })
   @ApiBody(SocialLoginApiBody)
   @ApiResponse(SignUpApiResponse)
@@ -66,29 +95,43 @@ export class AuthController {
     @Body() authSocialDto: AuthSocialDto,
   ): Promise<ResponseWrapper<AuthData>> {
     const data = await this.authService.socialLogin(authSocialDto);
-    return buildResponse({data, code: ResponseCode.OK, message: "User logged in via social"});
+    return buildResponse({
+      data,
+      code: ResponseCode.OK,
+      message: this.i18n.t("auth.socialLoginSuccessMessage", {
+        lang: I18nContext.current().lang,
+      }),
+    });
   }
 
-  @Post('/refresh')
+  @Post("/refresh")
   @ApiOperation({ summary: "Refresh access token" })
   @ApiBody(RefreshTokenApiBody)
   @ApiResponse(RefreshTokenApiResponse)
-  @ApiResponse({ 
-    status: 400, 
-    description: "Bad request - invalid refresh token" 
+  @ApiResponse({
+    status: 400,
+    description: "Bad request - invalid refresh token",
   })
-  @ApiResponse({ 
-    status: 401, 
-    description: "Unauthorized - invalid or expired refresh token" 
+  @ApiResponse({
+    status: 401,
+    description: "Unauthorized - invalid or expired refresh token",
   })
   async refresh(
-    @Body('refresh_token') refreshToken: string,
-  ): Promise<ResponseWrapper<Pick<TokensData, "access_token" | "access_token_expires">>> {
+    @Body("refresh_token") refreshToken: string,
+  ): Promise<
+    ResponseWrapper<Pick<TokensData, "access_token" | "access_token_expires">>
+  > {
     const data = await this.authService.refreshAccessToken(refreshToken);
-    return buildResponse({data, code:ResponseCode.OK, message:"Access token refreshed"});
+    return buildResponse({
+      data,
+      code: ResponseCode.OK,
+      message: this.i18n.t("auth.accessTokenRefreshed", {
+        lang: I18nContext.current().lang,
+      }),
+    });
   }
 
-  @Post('/forgot-password')
+  @Post("/forgot-password")
   @ApiOperation({ summary: "Request password reset email" })
   @ApiBody(ForgotPasswordBody)
   @ApiResponse(ForgotPasswordApiResponse)
@@ -97,19 +140,56 @@ export class AuthController {
     @Body() forgotPasswordDto: ForgotPasswordDto,
   ): Promise<ResponseWrapper<{ success: boolean; message: string }>> {
     const data = await this.authService.forgotPassword(forgotPasswordDto.email);
-    return buildResponse({ data, code: ResponseCode.OK, message: data.message });
+    return buildResponse({
+      data,
+      code: ResponseCode.OK,
+      message: data.message,
+    });
   }
 
-  @Post('/reset-password')
+  @Post("/reset-password")
   @ApiOperation({ summary: "Reset password using token" })
   @ApiBody(ResetPasswordBody)
   @ApiResponse(ResetPasswordApiResponse)
   @ApiResponse({ status: 400, description: "Bad request - invalid data" })
-  @ApiResponse({ status: 404, description: "Not found - invalid or expired token" })
+  @ApiResponse({
+    status: 404,
+    description: "Not found - invalid or expired token",
+  })
   async resetPassword(
     @Body() resetPasswordDto: ResetPasswordDto,
   ): Promise<ResponseWrapper<{ success: boolean; message: string }>> {
-    const data = await this.authService.resetPassword(resetPasswordDto.token, resetPasswordDto.newPassword);
-    return buildResponse({ data, code: ResponseCode.OK, message: data.message });
+    const data = await this.authService.resetPassword(
+      resetPasswordDto.token,
+      resetPasswordDto.newPassword,
+    );
+    return buildResponse({
+      data,
+      code: ResponseCode.OK,
+      message: data.message,
+    });
+  }
+
+  @Get("/confirm-email")
+  @ApiOperation({ summary: "Confirm email using token" })
+  @ApiQuery({
+    name: "token",
+    description: "Email confirmation token from email",
+  })
+  @ApiResponse(ConfirmEmailApiResponse)
+  @ApiResponse({ status: 400, description: "Bad request - invalid data" })
+  @ApiResponse({
+    status: 404,
+    description: "Not found - invalid or expired token",
+  })
+  async confirmEmail(
+    @Query() confirmEmailDto: ConfirmEmailDto,
+  ): Promise<ResponseWrapper<{ success: boolean; message: string }>> {
+    const data = await this.authService.confirmEmail(confirmEmailDto.token);
+    return buildResponse({
+      data,
+      code: ResponseCode.OK,
+      message: data.message,
+    });
   }
 }

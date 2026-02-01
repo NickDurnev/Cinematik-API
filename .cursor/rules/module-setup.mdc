@@ -1,0 +1,399 @@
+---
+alwaysApply: true
+---
+
+# Module Setup Rules
+
+## Directory Structure
+
+Each new module should follow this structure:
+
+```
+src/module_name/
+├── module_name.module.ts     # NestJS module definition
+├── module_name.controller.ts # REST endpoints
+├── module_name.service.ts    # Business logic
+├── module_name.repository.ts # Database interactions
+├── schema.ts                 # Drizzle schema definition
+├── dto/                      # DTOs directory
+│   ├── create.dto.ts         # Create DTOs
+│   ├── update.dto.ts         # Update DTOs
+│   ├── query.dto.ts          # Query DTOs
+│   └── response.dto.ts       # Response DTOs
+├── entities/                 # Entity definitions (if needed)
+│   └── module_name.entity.ts
+└── docs/                     # Swagger documentation
+    └── module_name.docs.ts   # API documentation definitions
+```
+
+## File Purposes
+
+### 1. Module (`module_name.module.ts`)
+
+NestJS module that wires together controllers, services, and imports.
+
+```typescript
+import { Module } from "@nestjs/common";
+import { AuthModule } from "@/auth/auth.module";
+import DatabaseModule from "@/database/database.module";
+
+import ModuleController from "./module.controller";
+import ModuleService from "./module.service";
+import ModuleRepository from "./module.repository";
+
+@Module({
+  imports: [AuthModule, DatabaseModule],
+  controllers: [ModuleController],
+  providers: [ModuleService, ModuleRepository],
+  exports: [ModuleRepository],
+})
+export default class ModuleModule {}
+```
+
+### 2. Controller (`module_name.controller.ts`)
+
+REST endpoints with Swagger decorators.
+
+```typescript
+import { Controller, Get, Post, Put, Delete, Param, Body, Query } from "@nestjs/common";
+import { ApiTags, ApiOperation, ApiResponse } from "@nestjs/swagger";
+import { ResponseWrapper, buildResponse } from "@/types";
+import { ModuleService } from "./module.service";
+import { CreateModuleDto, UpdateModuleDto } from "./dto";
+
+@ApiTags("Modules")
+@Controller("modules")
+export class ModuleController {
+  constructor(private readonly moduleService: ModuleService) {}
+
+  @Get()
+  @ApiOperation({ summary: "List all modules" })
+  @ApiResponse({ status: 200, description: "Modules retrieved successfully" })
+  async findAll(): Promise<ResponseWrapper<any[]>> {
+    const data = await this.moduleService.findAll();
+    return buildResponse({ data, code: "OK" });
+  }
+}
+```
+
+### 3. Service (`module_name.service.ts`)
+
+Business logic layer.
+
+```typescript
+import { Injectable } from "@nestjs/common";
+import { ModuleRepository } from "./module.repository";
+import { CreateModuleDto, UpdateModuleDto } from "./dto";
+
+@Injectable()
+export class ModuleService {
+  constructor(private readonly moduleRepository: ModuleRepository) {}
+
+  async findAll() {
+    return this.moduleRepository.findAll();
+  }
+
+  async create(createDto: CreateModuleDto) {
+    return this.moduleRepository.create(createDto);
+  }
+}
+```
+
+### 4. Repository (`module_name.repository.ts`)
+
+Database operations using Drizzle ORM.
+
+```typescript
+import { Injectable } from "@nestjs/common";
+import { DatabaseService } from "@/database/database.service";
+import { moduleTable } from "./schema";
+
+@Injectable()
+export class ModuleRepository {
+  constructor(private readonly db: DatabaseService) {}
+
+  async findAll() {
+    return this.db.client.select().from(moduleTable);
+  }
+
+  async create(data: any) {
+    const [result] = await this.db.client
+      .insert(moduleTable)
+      .values(data)
+      .returning();
+    return result;
+  }
+}
+```
+
+### 5. Schema (`schema.ts`)
+
+Drizzle ORM table definitions.
+
+```typescript
+import { pgTable, serial, text, timestamp, boolean } from "drizzle-orm/pg-core";
+
+export const moduleTable = pgTable("modules", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+```
+
+### 6. DTOs (`dto/`)
+
+Data Transfer Objects for validation and serialization.
+
+#### Create DTO (`dto/create.dto.ts`)
+
+```typescript
+import { IsString, IsOptional } from "class-validator";
+
+export class CreateModuleDto {
+  @IsString()
+  name: string;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
+}
+```
+
+#### Update DTO (`dto/update.dto.ts`)
+
+```typescript
+import { IsString, IsOptional, IsBoolean } from "class-validator";
+import { PartialType } from "@nestjs/mapped-types";
+import { CreateModuleDto } from "./create.dto";
+
+export class UpdateModuleDto extends PartialType(CreateModuleDto) {
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
+}
+```
+
+#### Response DTO (`dto/response.dto.ts`)
+
+```typescript
+import { ApiProperty } from "@nestjs/swagger";
+
+export class ModuleResponseDto {
+  @ApiProperty()
+  id: number;
+
+  @ApiProperty()
+  name: string;
+
+  @ApiProperty({ required: false })
+  description?: string;
+
+  @ApiProperty()
+  isActive: boolean;
+}
+```
+
+### 7. Docs (`docs/module_name.docs.ts`)
+
+Swagger documentation definitions.
+
+```typescript
+import { ApiProperty } from "@nestjs/swagger";
+import { CreateModuleDto } from "../dto/create.dto";
+import { ModuleResponseDto } from "../dto/response.dto";
+
+export const CreateModuleApiBody = {
+  type: CreateModuleDto,
+  description: "Module creation data",
+};
+
+export const CreateModuleApiResponse = {
+  status: 201,
+  description: "Module created successfully",
+  type: ModuleResponseDto,
+};
+```
+
+## NestJS Patterns
+
+### Dependency Injection
+
+Use constructor injection for dependencies:
+
+```typescript
+constructor(
+  private readonly moduleService: ModuleService,
+  private readonly emailService: EmailService,
+) {}
+```
+
+### Response Wrapper
+
+Use the project's response wrapper pattern:
+
+```typescript
+import { ResponseWrapper, buildResponse, ResponseCode } from "@/types";
+
+return buildResponse({
+  data: result,
+  code: ResponseCode.OK,
+  message: "Operation successful",
+});
+```
+
+### Validation
+
+Use class-validator decorators for DTO validation:
+
+```typescript
+import { IsString, IsEmail, MinLength, IsOptional } from "class-validator";
+```
+
+### Database Transactions
+
+Use transactions for complex operations:
+
+```typescript
+async createWithRelations(data: CreateModuleDto) {
+  return this.db.transaction(async (tx) => {
+    const module = await tx.insert(moduleTable).values(data).returning();
+    // Additional operations in same transaction
+    return module[0];
+  });
+}
+```
+
+## Authentication & Authorization
+
+### Protected Routes
+
+Use NestJS guards for authentication:
+
+```typescript
+import { UseGuards } from "@nestjs/common";
+import { JwtAuthGuard } from "@/auth/guards/jwt-auth.guard";
+
+@UseGuards(JwtAuthGuard)
+@Post()
+async create(@Body() createDto: CreateModuleDto) {
+  // Protected endpoint
+}
+```
+
+### User Context
+
+Get current user from request:
+
+```typescript
+import { CurrentUser } from "@/auth/decorators/current-user.decorator";
+
+@Post()
+async create(
+  @Body() createDto: CreateModuleDto,
+  @CurrentUser() user: UserEntity,
+) {
+  // Use user context
+}
+```
+
+## Testing Patterns
+
+### Unit Tests
+
+Test services and repositories in isolation:
+
+```typescript
+describe("ModuleService", () => {
+  let service: ModuleService;
+  let repository: jest.Mocked<ModuleRepository>;
+
+  beforeEach(async () => {
+    const module = await Test.createTestingModule({
+      providers: [
+        ModuleService,
+        {
+          provide: ModuleRepository,
+          useValue: mockRepository,
+        },
+      ],
+    }).compile();
+
+    service = module.get<ModuleService>(ModuleService);
+    repository = module.get(ModuleRepository);
+  });
+});
+```
+
+### E2E Tests
+
+Test full request/response cycle:
+
+```typescript
+describe("ModuleController (e2e)", () => {
+  let app: INestApplication;
+
+  beforeEach(async () => {
+    const moduleFixture = await Test.createTestingModule({
+      imports: [AppModule],
+    }).compile();
+
+    app = moduleFixture.createNestApplication();
+    await app.init();
+  });
+});
+```
+
+## Import Aliases
+
+Use path aliases defined in `tsconfig.json`:
+
+```typescript
+import { ResponseWrapper } from "@/types";
+import { DatabaseService } from "@/database/database.service";
+import AuthModule from "@/auth/auth.module";
+```
+
+## Error Handling
+
+Use NestJS built-in exceptions:
+
+```typescript
+import {
+  NotFoundException,
+  BadRequestException,
+  ConflictException,
+  UnauthorizedException,
+} from "@nestjs/common";
+```
+
+## Logging
+
+Use NestJS logger:
+
+```typescript
+import { Logger } from "@nestjs/common";
+
+private readonly logger = new Logger(ModuleService.name);
+
+this.logger.log("Creating new module");
+this.logger.error("Failed to create module", error);
+```
+
+## Internationalization
+
+Usenestjs-i18n for internationalization:
+
+```typescript
+import { I18n, I18nContext } from "nestjs-i18n";
+
+constructor(private readonly i18n: I18nService) {}
+
+async create(data: CreateModuleDto) {
+  return this.i18n.t("module.created", {
+    lang: I18nContext.current().lang,
+  });
+}
+```

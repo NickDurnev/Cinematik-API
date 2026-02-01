@@ -1,0 +1,340 @@
+---
+description: Drizzle ORM database migrations for NestJS
+globs: 
+alwaysApply: false
+---
+# Database Migrations - Drizzle ORM
+
+This guide covers database migrations using Drizzle ORM with PostgreSQL in the Cinematik NestJS application.
+
+## Migration Structure
+
+Migrations are organized in the following structure:
+```
+drizzle/
+├── migrations/
+│   ├── 0001_initial_schema.sql
+│   ├── 0002_add_users_table.sql
+│   ├── 0003_add_movies_table.sql
+│   └── ├── 0004_add_reviews_table.sql
+├── schema.ts
+├── config.ts
+└── package.json
+```
+
+## Configuration
+
+### Drizzle Configuration (`drizzle.config.ts`)
+```typescript
+import { defineConfig } from 'drizzle-kit';
+import { config } from 'dotenv';
+
+config({ path: '.env.stage.dev' });
+
+export default defineConfig({
+  schema: './src/database/schema.ts',
+  out: './drizzle/migrations',
+  driver: 'pg',
+  dbCredentials: {
+    url: process.env.DATABASE_URL!,
+  },
+  verbose: true,
+  strict: true,
+});
+```
+
+## Migration Commands
+
+### Generate Migrations
+```bash
+# Generate migration from schema changes
+npm run db:generate
+
+# Generate with custom name
+npm run db:generate -- --name add_new_table
+
+# Alternative command
+npx drizzle-kit generate
+```
+
+### Apply Migrations
+```bash
+# Apply all pending migrations
+npm run db:migrate
+
+# Apply to specific database
+npm run db:migrate -- --config drizzle.config.staging.ts
+
+# Alternative command
+npx drizzle-kit migrate
+```
+
+### Push Schema (Development)
+```bash
+# Push schema changes directly (development only)
+npm run db:push
+
+# Alternative command
+npx drizzle-kit push
+```
+
+### Migration Studio
+```bash
+# Open Drizzle Studio for database inspection
+npm run db:studio
+
+# Alternative command
+npx drizzle-kit studio
+```
+
+## Creating New Migrations
+
+### 1. Update Schema
+First, modify your schema file with the new changes:
+
+```typescript
+// src/database/schema.ts
+import { pgTable, serial, text, timestamp } from "drizzle-orm/pg-core";
+
+export const newTable = pgTable("new_table", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+```
+
+### 2. Generate Migration
+```bash
+npm run db:generate
+```
+
+This will create a new migration file in `drizzle/migrations/` with SQL commands.
+
+### 3. Review Migration
+Always review generated migrations before applying:
+
+```sql
+-- Example generated migration
+CREATE TABLE IF NOT EXISTS "new_table" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"name" text NOT NULL,
+	"description" text,
+	"created_at" timestamp DEFAULT now()
+);
+```
+
+### 4. Apply Migration
+```bash
+npm run db:migrate
+```
+
+## Migration File Structure
+
+Each migration file contains:
+- **Up SQL**: Commands to apply the migration
+- **Down SQL**: Commands to rollback the migration (when applicable)
+
+```sql
+-- Migration: 0005_new_feature.sql
+-- Up: Create new feature table
+CREATE TABLE "feature_flags" (
+  "id" serial PRIMARY KEY NOT NULL,
+  "name" varchar(255) NOT NULL,
+  "enabled" boolean DEFAULT false,
+  "created_at" timestamp DEFAULT now()
+);
+
+-- Down: Drop feature table (Drizzle handles this automatically)
+```
+
+## Best Practices
+
+### 1. Schema Design
+- **Use descriptive names**: `user_profiles` instead of `users_extra`
+- **Follow naming conventions**: snake_case for table and column names
+- **Add constraints**: Define foreign keys, unique constraints, and indexes
+- **Use timestamps**: Add `created_at` and `updated_at` to most tables
+
+### 2. Migration Safety
+- **Review generated SQL**: Always check what Drizzle generates
+- **Test in development**: Apply migrations in dev before production
+- **Backup production**: Always backup before applying production migrations
+- **Use transactions**: Drizzle automatically wraps migrations in transactions
+
+### 3. Version Control
+- **Commit migrations**: Add migration files to version control
+- **Never edit applied migrations**: Don't modify migrations that have been applied
+- **Document breaking changes**: Update documentation for schema changes
+
+### 4. Performance Considerations
+- **Add indexes**: Create indexes for frequently queried columns
+- **Consider data types**: Use appropriate data types for columns
+- **Batch large updates**: Break large data migrations into smaller batches
+
+## Common Migration Patterns
+
+### Adding New Table
+```typescript
+// schema.ts
+export const categories = pgTable("categories", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull().unique(),
+  description: text("description"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+```
+
+### Adding New Column
+```typescript
+// schema.ts
+export const movies = pgTable("movies", {
+  // existing columns...
+  genre: text("genre"), // New column
+  rating: integer("rating").default(0), // New column with default
+});
+```
+
+### Adding Foreign Key
+```typescript
+// schema.ts
+export const reviews = pgTable("reviews", {
+  id: serial("id").primaryKey(),
+  movieId: integer("movie_id").references(() => movies.id),
+  userId: integer("user_id").references(() => users.id),
+  content: text("content").notNull(),
+  rating: integer("rating").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+```
+
+### Adding Index
+```typescript
+// schema.ts
+export const movies = pgTable("movies", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  // ... other columns
+}, (table) => ({
+  titleIdx: index("movies_title_idx").on(table.title),
+  genreIdx: index("movies_genre_idx").on(table.genre),
+}));
+```
+
+## Environment-Specific Migrations
+
+### Development
+```bash
+# Use development database
+npm run db:migrate
+```
+
+### Staging
+```bash
+# Use staging database
+STAGE=staging npm run db:migrate
+```
+
+### Production
+```bash
+# Use production database with extra caution
+STAGE=prod npm run db:migrate
+```
+
+## Troubleshooting
+
+### 1. Migration Conflicts
+```bash
+# Reset migration history (development only)
+rm -rf drizzle/migrations
+npm run db:generate
+npm run db:migrate
+```
+
+### 2. Database Connection Issues
+```bash
+# Check database URL
+echo $DATABASE_URL
+
+# Test connection
+npm run db:studio
+```
+
+### 3. Failed Migrations
+```bash
+# Check migration status
+npx drizzle-kit migrate --verbose
+
+# Manually fix database and reset
+# (Use with caution - data loss possible)
+```
+
+### 4. Schema Drift
+```bash
+# Check for schema drift
+npm run db:push -- --force
+
+# Or recreate database (development only)
+DROP DATABASE cinematik_dev;
+CREATE DATABASE cinematik_dev;
+npm run db:migrate
+```
+
+## Migration Tools
+
+### Drizzle Kit Commands
+```bash
+# All available commands
+npx drizzle-kit --help
+
+# Generate migration
+npx drizzle-kit generate
+
+# Apply migrations
+npx drizzle-kit migrate
+
+# Push schema changes
+npx drizzle-kit push
+
+# Open studio
+npx drizzle-kit studio
+
+# Introspect database
+npx drizzle-kit introspect
+```
+
+### Package.json Scripts
+```json
+{
+  "scripts": {
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio",
+    "db:introspect": "drizzle-kit introspect",
+    "db:drop": "drizzle-kit drop"
+  }
+}
+```
+
+## Security Considerations
+
+1. **Environment Variables**: Never commit database credentials
+2. **Production Migrations**: Always test in staging first
+3. **Rollback Plans**: Have rollback strategies for breaking changes
+4. **Access Control**: Use appropriate database permissions
+5. **Audit Logging**: Log migration activities in production
+
+## Migration Checklist
+
+Before applying migrations to production:
+
+- [ ] Test migration in development
+- [ ] Test migration in staging
+- [ ] Backup production database
+- [ ] Review generated SQL
+- [ ] Plan rollback strategy
+- [ ] Schedule maintenance window
+- [ ] Monitor application during migration
+- [ ] Verify application functionality post-migration

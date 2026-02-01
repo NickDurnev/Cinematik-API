@@ -1,0 +1,544 @@
+---
+description: This rule describes how to create tests
+globs:
+alwaysApply: false
+---
+
+# NestJS Testing Strategy
+
+This document outlines the standard approach for creating tests in this NestJS project, using mocked repositories for database operations instead of real database connections.
+
+## Core Principles
+
+1. **Mock Repositories, Not Database**: Tests mock repository interfaces instead of using real database connections
+2. **Fast & Isolated**: No database setup/teardown, tests run independently
+3. **Focus on Business Logic**: Test service behavior with controlled repository responses
+4. **Explicit Data**: Define exactly what data the mock returns for each test case
+5. **Jest & TypeScript**: Using Jest with TypeScript for type-safe testing
+
+## Test Organization
+
+Tests are organized by domain/feature and follow this structure:
+
+```
+src/
+  ├── auth/
+  │   ├── auth.service.spec.ts     # Service unit tests
+  │   ├── auth.controller.spec.ts # Controller unit tests
+  │   └── user.repository.spec.ts # Repository unit tests
+  ├── movies/
+  │   ├── movies.service.spec.ts
+  │   ├── movies.controller.spec.ts
+  │   └── movies.repository.spec.ts
+  └── reviews/
+      ├── reviews.service.spec.ts
+      ├── reviews.controller.spec.ts
+      └── reviews.repository.spec.ts
+```
+
+## Test Configuration
+
+### Jest Configuration
+
+The project uses Jest with the following configuration (from package.json):
+
+```json
+{
+  "moduleFileExtensions": ["js", "json", "ts"],
+  "rootDir": "src",
+  "testRegex": ".*\\.spec\\.ts$",
+  "transform": {
+    "^.+\\.(t|j)s$": "ts-jest"
+  },
+  "collectCoverageFrom": ["**/*.(t|j)s"],
+  "coverageDirectory": "../coverage",
+  "testEnvironment": "node"
+}
+```
+
+### Test Commands
+
+- `npm test` - Run all tests
+- `npm run test:watch` - Run tests in watch mode
+- `npm run test:cov` - Run tests with coverage
+- `npm run test:debug` - Run tests in debug mode
+- `npm run test:e2e` - Run end-to-end tests
+
+## Test Structure
+
+Each test file follows this general structure:
+
+```typescript
+import { Test, TestingModule } from '@nestjs/testing';
+import { I18nService } from 'nestjs-i18n';
+
+// Import the class being tested
+import { ServiceBeingTested } from './path/to/service';
+import { RepositoryBeingMocked } from './path/to/repository';
+
+// Mock data
+const mockData = {
+  id: '1',
+  name: 'Test Name',
+};
+
+// Mock repository
+const mockRepository = {
+  methodName: jest.fn(),
+};
+
+describe('ServiceBeingTested', () => {
+  let service: ServiceBeingTested;
+  let repository: RepositoryBeingMocked;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        ServiceBeingTested,
+        {
+          provide: RepositoryBeingMocked,
+          useValue: mockRepository,
+        },
+        {
+          provide: I18nService,
+          useValue: {
+            t: jest.fn((key: string) => key),
+          },
+        },
+      ],
+    }).compile();
+
+    service = module.get<ServiceBeingTested>(ServiceBeingTested);
+    repository = module.get<RepositoryBeingMocked>(RepositoryBeingMocked);
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  // Test cases here
+});
+```
+
+## Setting Up Repository Mocks
+
+### Basic Repository Mock
+
+```typescript
+// Mock repository methods
+const mockRepository = {
+  findOne: jest.fn(),
+  findAll: jest.fn(),
+  create: jest.fn(),
+  update: jest.fn(),
+  delete: jest.fn(),
+};
+```
+
+### Database Provider Mock
+
+For repositories that use Drizzle ORM:
+
+```typescript
+// Mock database connection
+const mockDatabase = {
+  select: jest.fn().mockReturnThis(),
+  from: jest.fn().mockReturnThis(),
+  where: jest.fn().mockReturnThis(),
+  limit: jest.fn().mockReturnThis(),
+  offset: jest.fn().mockReturnThis(),
+  execute: jest.fn().mockResolvedValue([mockData]),
+  insert: jest.fn().mockReturnThis(),
+  values: jest.fn().mockReturnThis(),
+  returning: jest.fn().mockResolvedValue([mockData]),
+  update: jest.fn().mockReturnThis(),
+  set: jest.fn().mockReturnThis(),
+  delete: jest.fn().mockReturnThis(),
+} as unknown as NodePgDatabase;
+
+// In test setup
+{
+  provide: 'DATABASE_CONNECTION',
+  useValue: mockDatabase,
+}
+```
+
+## Test Naming
+
+Follow this naming convention for tests:
+
+```typescript
+describe('ServiceName', () => {
+  describe('methodName', () => {
+    it('should [expected behavior] when [condition]', () => {
+      // Test implementation
+    });
+  });
+});
+```
+
+Examples:
+
+- `should create a new movie when valid data is provided`
+- `should throw NotFoundException when movie not found`
+- `should update user profile successfully when valid data provided`
+- `should handle validation errors when invalid data provided`
+
+## Testing CRUD Operations
+
+### Create (POST)
+
+```typescript
+it('should create a new resource when valid data is provided', async () => {
+  const createDto: CreateDto = {
+    name: 'Test Resource',
+    // other properties
+  };
+  const expectedResource = { id: '1', ...createDto };
+
+  mockRepository.create.mockResolvedValue(expectedResource);
+
+  const result = await service.create(createDto, mockUser);
+
+  expect(repository.create).toHaveBeenCalledWith(createDto, mockUser);
+  expect(result).toEqual(expectedResource);
+});
+
+it('should throw an error when resource already exists', async () => {
+  const createDto: CreateDto = {
+    name: 'Existing Resource',
+  };
+
+  mockRepository.create.mockRejectedValue(new Error('Resource already exists'));
+
+  await expect(service.create(createDto, mockUser)).rejects.toThrow('Resource already exists');
+});
+```
+
+### Read (GET)
+
+```typescript
+it('should return a resource when valid id is provided', async () => {
+  const resourceId = '1';
+  const expectedResource = { id: resourceId, name: 'Test Resource' };
+
+  mockRepository.findOne.mockResolvedValue(expectedResource);
+
+  const result = await service.findOne(resourceId);
+
+  expect(repository.findOne).toHaveBeenCalledWith(resourceId);
+  expect(result).toEqual(expectedResource);
+});
+
+it('should throw NotFoundException when resource not found', async () => {
+  const resourceId = '999';
+
+  mockRepository.findOne.mockResolvedValue(null);
+
+  await expect(service.findOne(resourceId)).rejects.toThrow(NotFoundException);
+});
+```
+
+### Update (PUT)
+
+```typescript
+it('should update a resource when valid data is provided', async () => {
+  const resourceId = '1';
+  const updateDto: UpdateDto = { name: 'Updated Resource' };
+  const updatedResource = { id: resourceId, ...updateDto };
+
+  mockRepository.findOne.mockResolvedValue({ id: resourceId, name: 'Original Resource' });
+  mockRepository.update.mockResolvedValue(updatedResource);
+
+  const result = await service.update(resourceId, updateDto);
+
+  expect(repository.findOne).toHaveBeenCalledWith(resourceId);
+  expect(repository.update).toHaveBeenCalledWith(resourceId, updateDto);
+  expect(result).toEqual(updatedResource);
+});
+```
+
+### Delete (DELETE)
+
+```typescript
+it('should delete a resource when valid id is provided', async () => {
+  const resourceId = '1';
+  const deletedResource = { id: resourceId, name: 'Deleted Resource' };
+
+  mockRepository.findOne.mockResolvedValue(deletedResource);
+  mockRepository.delete.mockResolvedValue(deletedResource);
+
+  const result = await service.delete(resourceId);
+
+  expect(repository.findOne).toHaveBeenCalledWith(resourceId);
+  expect(repository.delete).toHaveBeenCalledWith(resourceId);
+  expect(result).toEqual(deletedResource);
+});
+```
+
+## Testing Controllers
+
+### Controller Test Setup
+
+```typescript
+import { AuthGuard } from '@nestjs/passport';
+import { ExecutionContext } from '@nestjs/common';
+
+describe('ResourceController', () => {
+  let controller: ResourceController;
+  let service: ResourceService;
+
+  const mockUser = {
+    id: '1',
+    name: 'Test User',
+    email: 'test@example.com',
+  };
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [ResourceController],
+      providers: [
+        {
+          provide: ResourceService,
+          useValue: mockResourceService,
+        },
+        {
+          provide: I18nService,
+          useValue: {
+            t: jest.fn((key: string) => key),
+          },
+        },
+      ],
+    })
+      .overrideGuard(AuthGuard)
+      .useValue({
+        canActivate: jest.fn((context: ExecutionContext) => {
+          const request = context.switchToHttp().getRequest();
+          request.user = mockUser;
+          return true;
+        }),
+      })
+      .compile();
+
+    controller = module.get<ResourceController>(ResourceController);
+    service = module.get<ResourceService>(ResourceService);
+  });
+});
+```
+
+### Controller Test Example
+
+```typescript
+it('should return user resources when GET endpoint is called', async () => {
+  const expectedResources = [
+    { id: '1', name: 'Resource 1' },
+    { id: '2', name: 'Resource 2' },
+  ];
+
+  mockService.getResources.mockResolvedValue(expectedResources);
+
+  const result = await controller.getResources(mockUser as any);
+
+  expect(service.getResources).toHaveBeenCalledWith(mockUser);
+  expect(result).toEqual(expectedResources);
+});
+```
+
+## Testing Error Cases
+
+### Not Found
+
+```typescript
+it('should throw NotFoundException when resource not found', async () => {
+  const resourceId = '999';
+
+  mockRepository.findOne.mockResolvedValue(null);
+
+  await expect(service.findOne(resourceId)).rejects.toThrow(NotFoundException);
+});
+```
+
+### Validation Errors
+
+```typescript
+it('should handle validation errors when invalid data is provided', async () => {
+  const invalidDto = {
+    name: '', // Invalid empty name
+  };
+
+  mockRepository.create.mockRejectedValue(new Error('Validation failed'));
+
+  await expect(service.create(invalidDto, mockUser)).rejects.toThrow('Validation failed');
+});
+```
+
+## Mocking Database Chains
+
+For Drizzle ORM queries, you need to mock the chainable methods:
+
+```typescript
+// Mock select chain
+const mockSelectChain = {
+  from: jest.fn().mockReturnThis(),
+  where: jest.fn().mockReturnThis(),
+  limit: jest.fn().mockReturnThis(),
+  offset: jest.fn().mockReturnThis(),
+  execute: jest.fn().mockResolvedValue(mockData),
+};
+
+mockDatabase.select = jest.fn().mockReturnValue(mockSelectChain);
+
+// Mock insert chain
+const mockInsertChain = {
+  values: jest.fn().mockReturnValue({
+    returning: jest.fn().mockResolvedValue([mockData]),
+  }),
+};
+
+mockDatabase.insert = jest.fn().mockReturnValue(mockInsertChain);
+
+// Mock update chain
+const mockUpdateChain = {
+  set: jest.fn().mockReturnValue({
+    where: jest.fn().mockReturnValue({
+      returning: jest.fn().mockResolvedValue([mockData]),
+    }),
+  }),
+};
+
+mockDatabase.update = jest.fn().mockReturnValue(mockUpdateChain);
+```
+
+## Testing Services with Dependencies
+
+### Testing with I18n
+
+```typescript
+{
+  provide: I18nService,
+  useValue: {
+    t: jest.fn((key: string) => key),
+  },
+}
+```
+
+### Testing with Authentication
+
+```typescript
+// Mock user
+const mockUser = {
+  id: '1',
+  name: 'Test User',
+  email: 'test@example.com',
+};
+
+// In test, pass mock user
+await service.methodName(params, mockUser);
+```
+
+## Model Factories
+
+Use factories to create test data objects:
+
+```typescript
+// Mock user factory
+const createMockUser = (overrides: Partial<any> = {}) => ({
+  id: '1',
+  name: 'Test User',
+  email: 'test@example.com',
+  ...overrides,
+});
+
+// Mock movie factory
+const createMockMovie = (overrides: Partial<any> = {}) => ({
+  id: '1',
+  title: 'Test Movie',
+  category: 'action',
+  user_id: '1',
+  ...overrides,
+});
+
+// Usage in tests
+const mockUser = createMockUser();
+const mockMovie = createMockMovie({ title: 'Specific Movie' });
+```
+
+## Testing Repository Layer
+
+### Repository Test Example
+
+```typescript
+describe('MoviesRepository', () => {
+  let repository: MoviesRepository;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        MoviesRepository,
+        {
+          provide: 'DATABASE_CONNECTION',
+          useValue: mockDatabase,
+        },
+      ],
+    }).compile();
+
+    repository = module.get<MoviesRepository>(MoviesRepository);
+  });
+
+  it('should return paginated movies', async () => {
+    const query = { page: 1, limit: 10 };
+    const expectedMovies = [{ id: '1', title: 'Movie 1' }];
+    
+    // Mock the select chain
+    const mockSelectChain = {
+      from: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      limit: jest.fn().mockReturnThis(),
+      offset: jest.fn().mockReturnThis(),
+      execute: jest.fn().mockResolvedValue(expectedMovies),
+    };
+    
+    mockDatabase.select = jest.fn().mockReturnValue(mockSelectChain);
+
+    const result = await repository.getMovies(query);
+
+    expect(mockDatabase.select).toHaveBeenCalled();
+    expect(result).toEqual(expectedMovies);
+  });
+});
+```
+
+## Test Coverage
+
+The project aims for high test coverage. To check coverage:
+
+```bash
+npm run test:cov
+```
+
+Coverage reports are generated in the `coverage/` directory.
+
+## Best Practices
+
+1. **Mock at Repository Level**: Mock repository interfaces, not database connections
+2. **Configure Before Execute**: Set up all mock return values before making the request
+3. **Verify Interactions**: Assert that repositories were called with correct arguments
+4. **Use Factories**: Create test objects with factories for consistent test data
+5. **Test One Thing**: Each test should verify one specific behavior
+6. **Clear Test Names**: Use descriptive names indicating what's being tested
+7. **Clear Mocks**: Clear mocks after each test with `jest.clearAllMocks()`
+8. **Test Error Paths**: Include tests for error scenarios (not found, validation errors, etc.)
+9. **Test Both Success and Failure**: Test both happy paths and edge cases
+10. **Keep Tests Simple**: Avoid complex setup; focus on the behavior being tested
+
+## Running Tests
+
+- Run all tests: `npm test`
+- Run tests in watch mode: `npm run test:watch`
+- Run tests with coverage: `npm run test:cov`
+- Run tests for a specific file: `npm test -- path/to/file.spec.ts`
+- Run tests matching a pattern: `npm test -- --testNamePattern="pattern"`
+
+## Integration with CI/CD
+
+Tests are configured to run automatically in CI/CD pipelines. Ensure all tests pass before merging code.

@@ -1,0 +1,94 @@
+---
+alwaysApply: true
+---
+
+# Cinematik API - Development Rules and Guidelines
+
+## Core Rules
+
+### Module Development
+- **[Module Setup](mdc:.cursor/rules/module-setup.mdc)** - NestJS module structure and organization
+- **[Controllers](mdc:.cursor/rules/nestjs-controllers.mdc)** - REST endpoint patterns and best practices
+- **[Services](mdc:.cursor/rules/nestjs-services.mdc)** - Business logic and service layer patterns
+- **[Database Patterns](mdc:.cursor/rules/nestjs-database-patterns.mdc)** - Drizzle ORM and repository patterns
+
+### Code Quality
+- **[Development Workflow](mdc:.cursor/rules/development-workflow.mdc)** - Development process and best practices
+- **[Debugging Approach](mdc:.cursor/rules/debugging-approach.mdc)** - Debugging strategies and techniques
+
+### Testing
+- **[Testing Strategy](mdc:.cursor/rules/testing-strategy.mdc)** - Unit, integration, and E2E testing guidelines
+- **[Model Factories](mdc:.cursor/rules/tests-model-factories.mdc)** - Test data generation patterns
+
+### Development Tools
+- **[Database Migrations](mdc:.cursor/rules/database-migrations.mdc)** - Database migration strategies
+
+## Quick Reference
+
+### File Naming Conventions
+- **Modules**: `{module-name}.module.ts`
+- **Controllers**: `{module-name}.controller.ts`
+- **Services**: `{module-name}.service.ts`
+- **Repositories**: `{module-name}.repository.ts`
+- **Schemas**: `schema.ts`
+- **DTOs**: `dto/{action}.dto.ts` (create.dto.ts, update.dto.ts, etc.)
+- **Tests**: `{module-name}.service.spec.ts`, `{module-name}.controller.spec.ts`
+
+### Directory Structure
+```
+src/
+├── {module}/
+│   ├── {module}.module.ts
+│   ├── {module}.controller.ts
+│   ├── {module}.service.ts
+│   ├── {module}.repository.ts
+│   ├── schema.ts
+│   ├── dto/
+│   │   ├── create.dto.ts
+│   │   ├── update.dto.ts
+│   │   ├── query.dto.ts
+│   │   └── response.dto.ts
+│   ├── docs/
+│   │   └── {module}.docs.ts
+│   └── {module}.service.spec.ts
+```
+
+### Required Files for New Modules
+1. **Module Definition**: `{module}.module.ts`
+2. **Controller**: `{module}.controller.ts`
+3. **Service**: `{module}.service.ts`
+4. **Repository**: `{module}.repository.ts`
+5. **Schema**: `schema.ts`
+6. **DTOs**: At minimum `create.dto.ts` and `response.dto.ts`
+7. **Documentation**: `docs/{module}.docs.ts`
+8. **Tests**: `{module}.service.spec.ts`
+
+### Command Shortcuts
+- **Create Module**: `/create-module {module-name}` - Generates complete NestJS module
+- **Quality Check**: `npm run quality:check` - Runs all quality checks
+
+### Code Standards
+- **TypeScript**: Strict mode enabled
+- **Linting**: Biome for formatting and linting
+- **Testing**: Jest with coverage requirements
+- **Git**: Conventional commits with automated hooks
+- **Documentation**: Swagger/OpenAPI for all endpoints
+
+### Import Paths
+Use path aliases defined in `tsconfig.json`:
+```typescript
+import { ResponseWrapper } from "@/types";
+import { DatabaseService } from "@/database/database.service";
+import AuthModule from "@/auth/auth.module";
+```
+
+## Getting Started
+
+1. **For New Developers**: Read [development-workflow.mdc](mdc:.cursor/rules/development-workflow.mdc)
+2. **Module Creation**: Use `/create-module {name}` command or follow [module-setup.mdc](mdc:.cursor/rules/module-setup.mdc)
+3. **API Development**: Follow [nestjs-controllers.mdc](mdc:.cursor/rules/nestjs-controllers.mdc)
+4. **Database Operations**: Follow [nestjs-database-patterns.mdc](mdc:.cursor/rules/nestjs-database-patterns.mdc)
+
+## Project Context
+
+See [project-context.md](mdc:.cursor/context/project-context.md) for complete project overview, module status, and architectural decisions.

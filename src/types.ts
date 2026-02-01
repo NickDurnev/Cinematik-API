@@ -44,6 +44,7 @@ export type UserData = {
   email: string;
   picture: string;
   is_left_review: boolean;
+  email_confirmed: boolean;
 };
 
 export type AuthData = {

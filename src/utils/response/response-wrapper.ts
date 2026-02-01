@@ -5,6 +5,8 @@ import {
   ResponseWrapper,
 } from "@/types";
 
+export { ResponseCode };
+
 export function buildResponse<T>({
   data,
   code = ResponseCode.OK,

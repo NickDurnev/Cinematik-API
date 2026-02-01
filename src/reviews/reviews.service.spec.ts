@@ -1,64 +1,138 @@
-import { Test } from '@nestjs/testing';
-import { TasksService } from './tasks.service';
-import { TaskRepository } from './task.repository';
-import { TaskStatus } from './task-status.enum';
-import { NotFoundException } from '@nestjs/common';
+import { Test, TestingModule } from "@nestjs/testing";
+import { I18nService } from "nestjs-i18n";
 
-const mockTaskRepository = () => ({
-  getTasks: jest.fn(),
-  findOne: jest.fn(),
-});
+import { User } from "@/auth/schema";
 
-const mockUser = {
-  username: 'John',
-  id: '123',
-  password: '111',
-  tasks: [],
+import { CreateReviewDto, GetReviewsDto } from "./dto";
+import ReviewsRepository from "./reviews.repository";
+import ReviewsService from "./reviews.service";
+import { Review } from "./schema";
+
+// Mock I18nContext
+jest.mock("nestjs-i18n", () => ({
+  I18nContext: {
+    current: jest.fn().mockReturnValue({ lang: "en" }),
+  },
+  I18nService: jest.fn().mockImplementation(() => ({
+    t: jest.fn((key: string) => key),
+  })),
+  I18n: () => jest.fn(),
+}));
+
+// Mock data
+const mockReview: Review = {
+  id: "1",
+  text: "This is a test review",
+  rating: "5",
+  user_id: "1",
+  created_at: new Date("2023-12-01T10:00:00Z"),
+  updated_at: new Date("2023-12-01T10:00:00Z"),
+} as Review;
+
+const mockUser: User = {
+  id: "1",
+  name: "Test User",
+  email: "test@example.com",
+  email_confirmed: true,
+  password: "hashed_password",
+  picture: "https://example.com/avatar.jpg",
+  created_at: new Date("2023-12-01T10:00:00Z"),
+  updated_at: new Date("2023-12-01T10:00:00Z"),
 };
 
-describe('TasksService', () => {
-  let taskService: TasksService;
-  let tasksRepository;
+// Mock repository
+const mockReviewsRepository = {
+  getReviews: jest.fn(),
+  createReview: jest.fn(),
+  updateReview: jest.fn(),
+  deleteReview: jest.fn(),
+};
+
+describe("ReviewsService", () => {
+  let service: ReviewsService;
+  let repository: ReviewsRepository;
 
   beforeEach(async () => {
-    const module = await Test.createTestingModule({
+    const module: TestingModule = await Test.createTestingModule({
       providers: [
-        TasksService,
-        { provide: TaskRepository, useFactory: mockTaskRepository },
+        ReviewsService,
+        {
+          provide: ReviewsRepository,
+          useValue: mockReviewsRepository,
+        },
+        {
+          provide: I18nService,
+          useValue: {
+            t: jest.fn((key: string) => key),
+          },
+        },
       ],
     }).compile();
 
-    taskService = module.get(TasksService);
-    tasksRepository = module.get(TaskRepository);
+    service = module.get<ReviewsService>(ReviewsService);
+    repository = module.get<ReviewsRepository>(ReviewsRepository);
   });
 
-  describe('getTasks', () => {
-    it('calls TaskRepository.getTasks and returns the result', async () => {
-      tasksRepository.getTasks.mockResolvedValue('someValue');
-      const result = await taskService.getTasks(null, mockUser);
-      expect(result).toEqual('someValue');
-    });
+  afterEach(() => {
+    jest.clearAllMocks();
   });
 
-  describe('getTasksById', () => {
-    it('calls TaskRepository.findOne and returns the result', async () => {
-      const mockTask = {
-        title: 'Test task',
-        description: 'Test description',
-        id: 'someId',
-        status: TaskStatus.OPEN,
+  it("should be defined", () => {
+    expect(service).toBeDefined();
+  });
+
+  describe("getReviews", () => {
+    it("should return paginated reviews", async () => {
+      const mockResult = {
+        data: [mockReview],
+        meta: { total: 1, page: 1, limit: 10, total_pages: 1 },
       };
+      const queryDto: GetReviewsDto = { page: "1" };
 
-      tasksRepository.findOne.mockResolvedValue(mockTask);
-      const result = await taskService.getTaskById('someId', mockUser);
-      expect(result).toEqual(mockTask);
+      mockReviewsRepository.getReviews.mockResolvedValue(mockResult);
+
+      const result = await service.getReviews(queryDto, mockUser);
+
+      expect(repository.getReviews).toHaveBeenCalledWith(queryDto, mockUser);
+      expect(result).toEqual(mockResult);
     });
+  });
 
-    it('calls TaskRepository.findOne and handles the error', async () => {
-      tasksRepository.findOne.mockResolvedValue(null);
-      expect(taskService.getTaskById('someId', mockUser)).rejects.toThrow(
-        NotFoundException,
+  describe("createReview", () => {
+    it("should create a new review", async () => {
+      const createDto: CreateReviewDto = { text: "New review", rating: "4" };
+      mockReviewsRepository.createReview.mockResolvedValue(mockReview);
+
+      const result = await service.createReview(createDto, mockUser);
+
+      expect(repository.createReview).toHaveBeenCalledWith(createDto, mockUser);
+      expect(result).toEqual(mockReview);
+    });
+  });
+
+  describe("updateReview", () => {
+    it("should update a review", async () => {
+      const updateDto = { text: "Updated" };
+      mockReviewsRepository.updateReview.mockResolvedValue(mockReview);
+
+      const result = await service.updateReview(mockUser.id, updateDto);
+
+      expect(repository.updateReview).toHaveBeenCalledWith(
+        mockUser.id,
+        updateDto,
       );
+      expect(result).toEqual(mockReview);
+    });
+  });
+
+  describe("deleteReview", () => {
+    it("should delete a review", async () => {
+      mockReviewsRepository.deleteReview.mockResolvedValue(mockReview);
+
+      const result = await service.deleteReview(mockUser.id);
+
+      expect(repository.deleteReview).toHaveBeenCalledWith(mockUser.id);
+      expect(result).toEqual(mockReview);
     });
   });
 });

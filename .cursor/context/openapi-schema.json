@@ -1,0 +1,1659 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Cinematik API",
+    "description": "Cinematik API - Movie management platform backend with collaborative pair mode feature",
+    "version": "0.1.1",
+    "contact": {
+      "name": "API Support",
+      "email": "support@cinematik.com"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080",
+      "description": "Development server"
+    },
+    {
+      "url": "https://api.cinematik.com",
+      "description": "Production server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "App",
+      "description": "General application endpoints"
+    },
+    {
+      "name": "Auth",
+      "description": "Authentication and authorization"
+    },
+    {
+      "name": "Movies",
+      "description": "Movie catalog management"
+    },
+    {
+      "name": "Reviews",
+      "description": "Movie reviews"
+    },
+    {
+      "name": "Profile",
+      "description": "User profile management"
+    },
+    {
+      "name": "Pairs",
+      "description": "Collaborative movie selection with friends (Tinder-style swiping)"
+    }
+  ],
+  "paths": {
+    "/": {
+      "get": {
+        "tags": [
+          "App"
+        ],
+        "summary": "API Root",
+        "operationId": "getRoot",
+        "responses": {
+          "200": {
+            "description": "API is running",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponse_String"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/signup": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Register new user",
+        "operationId": "signup",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignupDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "User created successfully"
+          }
+        }
+      }
+    },
+    "/auth/signin": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "User login",
+        "operationId": "signin",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SigninDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login successful"
+          }
+        }
+      }
+    },
+    "/auth/social": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Social media login",
+        "operationId": "socialAuth",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "provider": {
+                    "type": "string",
+                    "enum": ["google", "facebook", "apple"]
+                  },
+                  "token": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login successful"
+          }
+        }
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Refresh access token",
+        "operationId": "refreshToken",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "refresh_token": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Token refreshed successfully"
+          }
+        }
+      }
+    },
+    "/auth/forgot-password": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Request password reset",
+        "operationId": "forgotPassword",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Password reset email sent"
+          }
+        }
+      }
+    },
+    "/auth/reset-password": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Reset password with token",
+        "operationId": "resetPassword",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "token": {
+                    "type": "string"
+                  },
+                  "new_password": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Password reset successfully"
+          }
+        }
+      }
+    },
+    "/profile": {
+      "get": {
+        "tags": [
+          "Profile"
+        ],
+        "summary": "Get user profile",
+        "operationId": "getProfile",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Profile retrieved successfully"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/profile": {
+      "patch": {
+        "tags": [
+          "Profile"
+        ],
+        "summary": "Update user profile",
+        "operationId": "updateProfile",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "picture": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Profile updated successfully"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/profile": {
+      "delete": {
+        "tags": [
+          "Profile"
+        ],
+        "summary": "Delete user profile",
+        "operationId": "deleteProfile",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Profile deleted successfully"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/profile/search": {
+      "get": {
+        "tags": [
+          "Profile"
+        ],
+        "summary": "Search users by name",
+        "operationId": "searchUsers",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Users found"
+          }
+        }
+      }
+    },
+    "/movies": {
+      "get": {
+        "tags": [
+          "Movies"
+        ],
+        "summary": "List movies with pagination",
+        "operationId": "getMovies",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Movies retrieved successfully"
+          }
+        }
+      }
+    },
+    "/movies": {
+      "post": {
+        "tags": [
+          "Movies"
+        ],
+        "summary": "Create new movie",
+        "operationId": "createMovie",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string"
+                  },
+                  "category": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Movie created successfully"
+          }
+        }
+      }
+    },
+    "/movies/ids": {
+      "get": {
+        "tags": [
+          "Movies"
+        ],
+        "summary": "Get user movie IDs",
+        "operationId": "getUserMovieIds",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Movie IDs retrieved successfully"
+          }
+        }
+      }
+    },
+    "/reviews": {
+      "get": {
+        "tags": [
+          "Reviews"
+        ],
+        "summary": "Get reviews by movie ID",
+        "operationId": "getReviews",
+        "parameters": [
+          {
+            "name": "movie_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reviews retrieved successfully"
+          }
+        }
+      }
+    },
+    "/reviews": {
+      "post": {
+        "tags": [
+          "Reviews"
+        ],
+        "summary": "Create review",
+        "operationId": "createReview",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "movie_id": {
+                    "type": "string"
+                  },
+                  "rating": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 10
+                  },
+                  "comment": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Review created successfully"
+          }
+        }
+      }
+    },
+    "/pairs/requests": {
+      "post": {
+        "tags": [
+          "Pairs"
+        ],
+        "summary": "Send a pair request to another user",
+        "operationId": "sendPairRequest",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendPairRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Pair request sent successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PairRequestResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - validation error or duplicate request"
+          },
+          "404": {
+            "description": "User not found"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Pairs"
+        ],
+        "summary": "Get pending incoming pair requests",
+        "operationId": "getPendingRequests",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Pending requests retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/PairRequestWithRequester"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pairs/requests/{id}": {
+      "patch": {
+        "tags": [
+          "Pairs"
+        ],
+        "summary": "Accept or reject a pair request",
+        "operationId": "respondToPairRequest",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Pair request ID",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RespondPairRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Request responded to successfully"
+          },
+          "400": {
+            "description": "Bad request - request already responded to or expired"
+          },
+          "403": {
+            "description": "Forbidden - not authorized to respond to this request"
+          },
+          "404": {
+            "description": "Request not found"
+          }
+        }
+      }
+    },
+    "/pairs": {
+      "get": {
+        "tags": [
+          "Pairs"
+        ],
+        "summary": "Get all user pairs",
+        "operationId": "getUserPairs",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Pairs retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/PairWithOtherUser"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pairs/{id}": {
+      "delete": {
+        "tags": [
+          "Pairs"
+        ],
+        "summary": "Remove a pair",
+        "operationId": "deletePair",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Pair ID",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Pair removed successfully"
+          },
+          "403": {
+            "description": "Forbidden - not part of this pair"
+          },
+          "404": {
+            "description": "Pair not found"
+          }
+        }
+      }
+    },
+    "/pairs/{pairId}/sessions": {
+      "post": {
+        "tags": [
+          "Pairs"
+        ],
+        "summary": "Create a new swiping session",
+        "operationId": "createSession",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "pairId",
+            "in": "path",
+            "required": true,
+            "description": "Pair ID",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSessionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Session created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - active session already exists"
+          },
+          "403": {
+            "description": "Forbidden - not part of this pair"
+          },
+          "404": {
+            "description": "Pair not found"
+          }
+        }
+      }
+    },
+    "/pairs/{pairId}/sessions/active": {
+      "get": {
+        "tags": [
+          "Pairs"
+        ],
+        "summary": "Get active session for a pair",
+        "operationId": "getActiveSession",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "pairId",
+            "in": "path",
+            "required": true,
+            "description": "Pair ID",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Active session retrieved successfully"
+          },
+          "403": {
+            "description": "Forbidden - not part of this pair"
+          },
+          "404": {
+            "description": "Pair not found"
+          }
+        }
+      }
+    },
+    "/pairs/{pairId}/sessions/{sessionId}/filters": {
+      "patch": {
+        "tags": [
+          "Pairs"
+        ],
+        "summary": "Propose filters for a session",
+        "operationId": "proposeFilters",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "pairId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProposeFiltersDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Filters proposed successfully"
+          },
+          "400": {
+            "description": "Bad request - invalid filters or session status"
+          },
+          "403": {
+            "description": "Forbidden - not part of this pair"
+          },
+          "404": {
+            "description": "Session not found"
+          }
+        }
+      }
+    },
+    "/pairs/{pairId}/sessions/{sessionId}/filters/accept": {
+      "post": {
+        "tags": [
+          "Pairs"
+        ],
+        "summary": "Accept proposed filters and start swiping",
+        "operationId": "acceptFilters",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "pairId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Filters accepted, session is now active"
+          },
+          "400": {
+            "description": "Bad request - filters not proposed or invalid session status"
+          },
+          "403": {
+            "description": "Forbidden - not part of this pair or cannot accept own filters"
+          },
+          "404": {
+            "description": "Session not found"
+          }
+        }
+      }
+    },
+    "/pairs/{pairId}/sessions/{sessionId}/end": {
+      "post": {
+        "tags": [
+          "Pairs"
+        ],
+        "summary": "End a session manually",
+        "operationId": "endSession",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "pairId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Session ended successfully"
+          },
+          "400": {
+            "description": "Bad request - session already completed"
+          },
+          "403": {
+            "description": "Forbidden - not part of this pair"
+          },
+          "404": {
+            "description": "Session not found"
+          }
+        }
+      }
+    },
+    "/pairs/sessions/{sessionId}/next": {
+      "get": {
+        "tags": [
+          "Pairs"
+        ],
+        "summary": "Get next content to swipe on",
+        "operationId": "getNextContent",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Next content retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - session not active"
+          },
+          "403": {
+            "description": "Forbidden - not part of this pair"
+          },
+          "404": {
+            "description": "Session not found"
+          }
+        }
+      }
+    },
+    "/pairs/sessions/{sessionId}/swipe": {
+      "post": {
+        "tags": [
+          "Pairs"
+        ],
+        "summary": "Record a swipe",
+        "operationId": "recordSwipe",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordSwipeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Swipe recorded successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SwipeResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - session not active"
+          },
+          "403": {
+            "description": "Forbidden - not part of this pair"
+          },
+          "404": {
+            "description": "Session not found"
+          }
+        }
+      }
+    },
+    "/pairs/{pairId}/matches": {
+      "get": {
+        "tags": [
+          "Pairs"
+        ],
+        "summary": "Get all matches for a pair",
+        "operationId": "getMatches",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "pairId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "mediaType",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "movie",
+                "tv"
+              ]
+            },
+            "description": "Filter by media type"
+          },
+          {
+            "name": "markedWatched",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "Filter by watched status"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Matches retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MatchesResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - not part of this pair"
+          },
+          "404": {
+            "description": "Pair not found"
+          }
+        }
+      }
+    },
+    "/pairs/{pairId}/matches/{matchId}/watched": {
+      "patch": {
+        "tags": [
+          "Pairs"
+        ],
+        "summary": "Mark a match as watched or unwatched",
+        "operationId": "markMatchAsWatched",
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "pairId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "matchId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "watched": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "watched"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Match updated successfully"
+          },
+          "403": {
+            "description": "Forbidden - not part of this pair"
+          },
+          "404": {
+            "description": "Match not found"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "APIResponse_String": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "string",
+            "example": "Hello from Cinematik API!"
+          },
+          "code": {
+            "type": "string",
+            "example": "OK"
+          },
+          "message": {
+            "type": "string",
+            "example": "Request successful"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-01-10T08:31:14.094Z"
+          }
+        }
+      },
+      "SignupDto": {
+        "type": "object",
+        "required": [
+          "name",
+          "email",
+          "password"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "John Doe"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "john@example.com"
+          },
+          "password": {
+            "type": "string",
+            "format": "password",
+            "example": "SecurePassword123"
+          }
+        }
+      },
+      "SigninDto": {
+        "type": "object",
+        "required": [
+          "email",
+          "password"
+        ],
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "john@example.com"
+          },
+          "password": {
+            "type": "string",
+            "format": "password",
+            "example": "SecurePassword123"
+          }
+        }
+      },
+      "SendPairRequestDto": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string",
+            "description": "Username of the user to invite",
+            "example": "john_doe"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "Email of the user to invite",
+            "example": "john@example.com"
+          }
+        },
+        "description": "Either username or email required"
+      },
+      "RespondPairRequestDto": {
+        "type": "object",
+        "required": [
+          "action"
+        ],
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "accept",
+              "reject"
+            ],
+            "example": "accept"
+          }
+        }
+      },
+      "CreateSessionDto": {
+        "type": "object",
+        "required": [
+          "mediaType"
+        ],
+        "properties": {
+          "mediaType": {
+            "type": "string",
+            "enum": [
+              "movie",
+              "tv"
+            ],
+            "example": "movie"
+          }
+        }
+      },
+      "ProposeFiltersDto": {
+        "type": "object",
+        "properties": {
+          "yearMin": {
+            "type": "integer",
+            "minimum": 1900,
+            "maximum": 2100,
+            "example": 2000
+          },
+          "yearMax": {
+            "type": "integer",
+            "minimum": 1900,
+            "maximum": 2100,
+            "example": 2024
+          },
+          "genreIds": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "example": [
+              28,
+              12,
+              878
+            ],
+            "description": "Array of TMDB genre IDs"
+          }
+        }
+      },
+      "RecordSwipeDto": {
+        "type": "object",
+        "required": [
+          "tmdbId",
+          "direction"
+        ],
+        "properties": {
+          "tmdbId": {
+            "type": "integer",
+            "example": 550,
+            "description": "TMDB ID of the content being swiped"
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "left",
+              "right"
+            ],
+            "example": "right"
+          }
+        }
+      },
+      "PairRequestResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "example": 201
+          },
+          "message": {
+            "type": "string",
+            "example": "Pair request sent successfully"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "requester_id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "requested_id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "pending",
+                  "accepted",
+                  "rejected"
+                ]
+              },
+              "expires_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        }
+      },
+      "PairRequestWithRequester": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "requester": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string"
+              },
+              "email": {
+                "type": "string"
+              },
+              "picture": {
+                "type": "string"
+              }
+            }
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending"
+            ]
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "PairWithOtherUser": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "otherUser": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string"
+              },
+              "email": {
+                "type": "string"
+              },
+              "picture": {
+                "type": "string"
+              }
+            }
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "SessionResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "example": 201
+          },
+          "message": {
+            "type": "string",
+            "example": "Session created successfully"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "pair_id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "media_type": {
+                "type": "string",
+                "enum": [
+                  "movie",
+                  "tv"
+                ]
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "filter_pending",
+                  "active",
+                  "completed"
+                ]
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        }
+      },
+      "ContentResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "integer",
+                "example": 550
+              },
+              "title": {
+                "type": "string",
+                "example": "Fight Club"
+              },
+              "posterPath": {
+                "type": "string",
+                "example": "/pB8BM7pdSp6B6Ih7QZ4DrQ3PmJK.jpg"
+              },
+              "overview": {
+                "type": "string",
+                "example": "A ticking-time-bomb insomniac..."
+              },
+              "voteAverage": {
+                "type": "number",
+                "example": 8.4
+              },
+              "releaseDate": {
+                "type": "string",
+                "example": "1999-10-15"
+              }
+            }
+          }
+        }
+      },
+      "SwipeResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "example": 200
+          },
+          "message": {
+            "type": "string",
+            "example": "It's a match!"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "matched": {
+                "type": "boolean",
+                "example": true
+              },
+              "match": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "tmdb_id": {
+                    "type": "integer"
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "poster_path": {
+                    "type": "string"
+                  },
+                  "media_type": {
+                    "type": "string",
+                    "enum": [
+                      "movie",
+                      "tv"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "MatchesResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "example": 200
+          },
+          "message": {
+            "type": "string",
+            "example": "Success"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "tmdb_id": {
+                  "type": "integer",
+                  "example": 550
+                },
+                "media_type": {
+                  "type": "string",
+                  "enum": [
+                    "movie",
+                    "tv"
+                  ]
+                },
+                "title": {
+                  "type": "string",
+                  "example": "Fight Club"
+                },
+                "poster_path": {
+                  "type": "string"
+                },
+                "overview": {
+                  "type": "string"
+                },
+                "matched_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "marked_watched": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

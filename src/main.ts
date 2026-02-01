@@ -27,9 +27,6 @@ async function bootstrap() {
       "http://localhost:3000",
       "https://cinematik-git-dev-nickdurnevs-projects.vercel.app",
     ],
-    credentials: true,
-    methods: "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS",
-    allowedHeaders: "Content-Type, Authorization",
   });
   app.useGlobalPipes(new ValidationPipe());
   app.useGlobalInterceptors(new TransformInterceptor());
