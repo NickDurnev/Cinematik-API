@@ -26,6 +26,7 @@ async function bootstrap() {
     origin: [
       "http://localhost:3000",
       "https://cinematik-git-dev-nickdurnevs-projects.vercel.app",
+      "https://www.cinematik.click",
     ],
   });
   app.useGlobalPipes(new ValidationPipe());
