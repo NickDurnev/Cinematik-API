@@ -21,7 +21,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             set -e  # Exit on any error
-            
+
             echo "Loading NVM..."
             export NVM_DIR="$HOME/.nvm"
             source "$NVM_DIR/nvm.sh"
@@ -32,7 +32,7 @@ jobs:
                 echo "Cloning repository..."
                 git clone https://${{ secrets.USERNAME }}:${{ secrets.TOKEN }}@github.com/${{ secrets.USERNAME }}/Cinematik-API.git
             fi
-            
+
             cd Cinematik-API
 
             echo "Checking if we're in a git repository..."
@@ -46,13 +46,13 @@ jobs:
 
             echo "Ensuring we're on the main branch..."
             git checkout main
-            
+
             echo "Fetching latest changes..."
             git fetch origin
-            
+
             echo "Resetting to latest main branch..."
             git reset --hard origin/main
-            
+
             echo "Cleaning untracked files..."
             git clean -fd            
 
@@ -69,6 +69,7 @@ jobs:
             JWT_SECRET=${{ secrets.JWT_SECRET }}
             RESEND_API_KEY=${{ secrets.RESEND_API_KEY }}
             CLIENT_APP_BASE_URL=${{ secrets.CLIENT_APP_BASE_URL }}
+            TMDB_API_KEY=${{ secrets.TMDB_API_KEY }}
             NODE_ENV=production
             EOF
 
@@ -78,10 +79,10 @@ jobs:
             echo "Installing dependencies..."
             npm install --production
             npm install --save-dev @types/express @types/node @types/uuid
-            
+
             echo "Installing all dependencies (including dev dependencies for build)..."
             npm install
-            
+
             echo "Setting Node.js memory options..."
             export NODE_OPTIONS="--max-old-space-size=4096"
 
@@ -103,7 +104,7 @@ jobs:
 
             echo "Restarting application..."
             pm2 delete cinematik-api || echo "No existing process to delete"
-            
+
             echo "Starting application with PM2..."
             if [ -f "dist/src/main.js" ]; then
                 STAGE=prod pm2 start dist/src/main.js --name cinematik-api
