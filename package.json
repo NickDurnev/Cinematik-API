@@ -19,14 +19,19 @@
     "format": "biome format .",
     "format:fix": "biome format --write .",
     "prepare": "husky",
-    "test": "STAGE=dev jest",
+    "test": "STAGE=test jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "test:integration": "STAGE=test jest --config ./test/jest-e2e.json",
     "test:integration:watch": "STAGE=test jest --config ./test/jest-e2e.json --watch",
-    "openapi:generate": "node scripts/generate-openapi-schema.js"
+    "openapi:generate": "node scripts/generate-openapi-schema.js",
+    "db:test:start": "docker-compose -f docker-compose.test.yml up -d",
+    "db:test:stop": "docker-compose -f docker-compose.test.yml down",
+    "db:test:restart": "docker-compose -f docker-compose.test.yml restart",
+    "db:test:logs": "docker-compose -f docker-compose.test.yml logs",
+    "db:test:shell": "docker-compose -f docker-compose.test.yml exec postgres-test psql -U test_user -d cinematik_test"
   },
   "dependencies": {
     "@biomejs/biome": "^2.0.4",
