@@ -16,6 +16,8 @@ Examples:
 
 ## Test Structure Overview
 
+### Unit Tests
+
 Tests are organized into the same directory as the module:
 
 ```
@@ -27,14 +29,27 @@ src/{module_name}/
     └── {dto}.spec.ts                   # DTO validation tests (optional)
 ```
 
+### Integration Tests (To Be Implemented)
+
+Integration tests will be organized in a separate directory (planned):
+
+```
+test/{module_name}/
+└── {module_name}.e2e-spec.ts            # Integration tests with real database
+```
+
+**Status**: Integration test infrastructure is planned. See `INTEGRATION_TESTS_PLAN.md` for details.
+
 ### Key Testing Types
 
-| Aspect | Controller Tests | Service Tests | Repository Tests |
-|--------|------------------|---------------|-----------------|
-| **Purpose** | HTTP request/response handling | Business logic | Database operations |
-| **Dependencies** | Mock Service & Auth | Mock Repository | Mock Database |
-| **Focus** | Status codes, responses, validation | Logic, error handling, data transformation | Queries, error handling |
-| **Tools** | Supertest, Jest mocking | Jest mocking | Jest mocking |
+| Aspect | Unit Tests | Integration Tests (Planned) |
+|--------|-------------|---------------------------|
+| **Purpose** | Business logic, HTTP handling | End-to-end API flows |
+| **Database** | Mocked | Real database with transactions |
+| **Focus** | Isolated unit testing | Request/response cycle, authentication |
+| **Tools** | Jest mocking | Supertest, real HTTP requests |
+| **Location** | `src/{module}/*.spec.ts` | `test/{module}/*.e2e-spec.ts` |
+| **Status** | ✅ Implemented | 📋 Planned |
 
 ## Pre-Flight Checklist
 
@@ -59,22 +74,18 @@ Create a TODO list to track progress:
 
 ```
 1. Review module implementation (controller, service, repository)
-2. Create CONTROLLER tests in src/{module}/{controller}.spec.ts (for each controller):
-   - Mock service and auth dependencies
-   - Write endpoint tests for all HTTP methods
-   - Write error case tests
-   - Write edge case tests
-3. Create SERVICE tests in src/{module}/{module}.service.spec.ts:
-   - Mock repository
-   - Write business logic tests
-   - Write error case tests
-   - Write edge case tests
-4. (Optional) Create REPOSITORY tests in src/{module}/{module}.repository.spec.ts:
-   - Mock database connection
-   - Write query tests
-   - Write error case tests
-5. Run all tests: npm test -- {module}/{module}.controller.spec.ts
-6. Verify all tests pass
+2. Create UNIT TESTS in src/{module}/:
+   - Controller tests ({module}.controller.spec.ts)
+   - Service tests ({module}.service.spec.ts)
+   - Repository tests (optional)
+3. Create INTEGRATION TESTS in test/{module}/:
+   - API endpoint tests ({module}.e2e-spec.ts)
+   - Success case tests
+   - Error case tests
+   - Authentication tests
+   - Edge case tests
+4. Run all tests: npm test && npm run test:integration
+5. Verify all tests pass
 ```
 
 ### Step 1: Review Module Implementation
@@ -400,7 +411,7 @@ describe('{Module}Repository', () => {
 Run tests and verify all pass:
 
 ```bash
-# Run all tests
+# Run all unit tests
 npm test
 
 # Run specific test file
@@ -409,7 +420,143 @@ npm test -- {module}/{module}.service.spec.ts
 
 # Run tests with coverage
 npm run test:cov -- {module}/{module}.service.spec.ts
+
+# Run integration tests
+npm run test:integration -- {module}/{module}.e2e-spec.ts
+
+# Run all tests (unit + integration)
+npm test && npm run test:integration
 ```
+
+### Step 6: Create Integration Tests (Recommended)
+
+Create integration tests following this structure:
+
+```typescript
+import { Test, TestingModule } from '@nestjs/testing';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
+import * as request from 'supertest';
+import { drizzle } from 'drizzle-orm/node-postgres';
+import { migrate } from 'drizzle-orm/node-postgres/migrator';
+import { Pool } from 'pg';
+
+import { AppModule } from '@/app.module';
+import { DatabaseHelper } from '../helpers/database.helper';
+import { AuthHelper } from '../helpers/auth.helper';
+import { TestDataFactory } from '../helpers/test-data.factory';
+
+describe('{Module} API (e2e)', () => {
+  let app: INestApplication;
+  let databaseHelper: DatabaseHelper;
+  let authHelper: AuthHelper;
+  let testDataFactory: TestDataFactory;
+
+  beforeAll(async () => {
+    const moduleFixture: TestingModule = await Test.createTestingModule({
+      imports: [AppModule],
+    }).compile();
+
+    app = moduleFixture.createNestApplication();
+    app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
+    await app.init();
+
+    databaseHelper = new DatabaseHelper();
+    authHelper = new AuthHelper(app);
+    testDataFactory = new TestDataFactory();
+
+    await databaseHelper.setupDatabase();
+  });
+
+  afterAll(async () => {
+    await databaseHelper.cleanupDatabase();
+    await app.close();
+  });
+
+  beforeEach(async () => {
+    await databaseHelper.beginTransaction();
+  });
+
+  afterEach(async () => {
+    await databaseHelper.rollbackTransaction();
+  });
+
+  describe('GET /{module}', () => {
+    it('should return paginated {module}s', async () => {
+      const user = await testDataFactory.createTestUser();
+      const accessToken = await authHelper.getAccessToken(user.email, 'password123');
+
+      const response = await request(app.getHttpServer())
+        .get('/{module}')
+        .query({ page: 1 })
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(200);
+
+      expect(response.body).toHaveProperty('data');
+      expect(response.body).toHaveProperty('meta');
+      expect(Array.isArray(response.body.data)).toBe(true);
+    });
+
+    it('should return 401 without authentication', async () => {
+      await request(app.getHttpServer())
+        .get('/{module}')
+        .expect(401);
+    });
+  });
+
+  describe('POST /{module}', () => {
+    it('should create a new {module}', async () => {
+      const user = await testDataFactory.createTestUser();
+      const accessToken = await authHelper.getAccessToken(user.email, 'password123');
+
+      const createDto = { name: 'Test {Module}' };
+
+      const response = await request(app.getHttpServer())
+        .post('/{module}')
+        .send(createDto)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(201);
+
+      expect(response.body.data).toHaveProperty('id');
+      expect(response.body.data.name).toBe(createDto.name);
+    });
+
+    it('should return 400 for invalid data', async () => {
+      const user = await testDataFactory.createTestUser();
+      const accessToken = await authHelper.getAccessToken(user.email, 'password123');
+
+      await request(app.getHttpServer())
+        .post('/{module}')
+        .send({ invalid: 'data' })
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(400);
+    });
+  });
+});
+```
+
+#### Integration Test Best Practices
+
+1. **Use Test Helpers**:
+   - `DatabaseHelper` - Database connection, transactions, cleanup
+   - `AuthHelper` - JWT token generation for authenticated requests
+   - `TestDataFactory` - Generate test data easily
+
+2. **Test Isolation**:
+   - Use `beforeEach` to begin database transaction
+   - Use `afterEach` to rollback transaction
+   - Each test starts with a clean database state
+
+3. **Test Coverage**:
+   - Success cases (200, 201)
+   - Authentication failures (401)
+   - Authorization failures (403)
+   - Validation errors (400)
+   - Not found errors (404)
+
+4. **Real HTTP Requests**:
+   - Use `supertest` for actual HTTP calls
+   - Test the complete request/response cycle
+   - Verify response structure matches API contract
 
 ---
 

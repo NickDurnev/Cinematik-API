@@ -24,6 +24,8 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
+    "test:integration": "STAGE=test jest --config ./test/jest-e2e.json",
+    "test:integration:watch": "STAGE=test jest --config ./test/jest-e2e.json --watch",
     "openapi:generate": "node scripts/generate-openapi-schema.js"
   },
   "dependencies": {
@@ -103,8 +105,7 @@
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [
-      "biome lint --write",
-      "biome format --write"
+      "biome check --write --no-errors-on-unmatched"
     ]
   }
 }

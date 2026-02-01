@@ -8,7 +8,11 @@
   "files": {
     "ignoreUnknown": false,
     "includes": [
-      "**"
+      "**",
+      "!**/coverage/**",
+      "!**/node_modules/**",
+      "!**/dist/**",
+      "!**/src/common/templates/**"
     ]
   },
   "assist": {
@@ -189,7 +193,10 @@
   "overrides": [
     {
       "includes": [
-        "**/*.spec.ts"
+        "**/*.spec.ts",
+        "**/*.e2e-spec.ts",
+        "**/test/**/*.ts",
+        "**/drizzle/**/*.ts"
       ],
       "linter": {
         "enabled": false

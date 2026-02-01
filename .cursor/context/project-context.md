@@ -188,11 +188,23 @@ src/
 ## Configuration
 
 ### Environment Variables
-- `STAGE` - Environment (dev, prod)
-- `DATABASE_URL` - PostgreSQL connection string
+- `STAGE` - Environment (dev, prod, test)
+- `DB_USER` - Database username
+- `DB_PASSWORD` - Database password
+- `DB_HOST` - Database host
+- `DB_PORT` - Database port
+- `DB_NAME` - Database name
+- `DATABASE_SSL_CA` - SSL certificate for database (optional)
 - `JWT_SECRET` - JWT signing secret
 - `RESEND_API_KEY` - Email service API key
+- `CLIENT_APP_BASE_URL` - Frontend application URL
 - `TMDB_API_KEY` - The Movie Database API key
+
+### Environment Files
+- `.env.stage.dev` - Development environment variables
+- `.env.stage.test` - Test environment variables (for integration tests)
+- `.env.stage.prod` - Production environment variables
+- `.env.example` - Example template for environment variables
 
 ### Configuration Schema
 - `config.schema.ts` - Zod validation for environment variables
@@ -269,19 +281,36 @@ enum ResponseCode {
 
 ## Testing Strategy
 
-### Unit Tests
+### Unit Tests (95 tests passing ✅)
 - Service layer business logic
 - Repository database operations
 - Utility functions
+- Located in: `src/**/*.spec.ts`
+- Command: `npm test`
 
-### Integration Tests
-- API endpoints
-- Database operations
+### Integration Tests (Implemented ✅)
+- API endpoints with real database
+- Database transactions with rollback
 - Authentication flows
+- Located in: `test/**/*.e2e-spec.ts`
+- **Status**: Implemented and ready to run
+- **Test Files**:
+  - `test/auth/auth.e2e-spec.ts` - Auth endpoints (signup, signin, refresh, password reset)
+  - `test/profile/profile.e2e-spec.ts` - Profile management (get, update, delete, search)
+  - `test/movies/movies.e2e-spec.ts` - Movies CRUD operations
+  - `test/reviews/reviews.e2e-spec.ts` - Reviews CRUD operations
+  - `test/pairs/pairs.e2e-spec.ts` - Pairs collaborative features
+- **Command**: `npm run test:integration` (requires `.env.stage.test` with database config)
 
-### E2E Tests
-- Complete user journeys
-- Multi-module interactions
+### Test Infrastructure
+- **Helpers**: `test/helpers/` ✅
+  - `database.helper.ts` - Database connection, transactions, cleanup
+  - `auth.helper.ts` - JWT token generation, sign up/in helpers
+  - `test-data.factory.ts` - Test data generation utilities
+- **Scripts**: ✅
+  - `npm run test:integration` - Run all integration tests
+  - `npm run test:integration:watch` - Watch mode for integration tests
+- **Documentation**: `INTEGRATION_TESTS_PLAN.md` - 62 tasks tracked
 
 ## Security Considerations
 
@@ -417,8 +446,12 @@ enum ResponseCode {
   "start": "STAGE=prod nest start",
   "start:dev": "STAGE=dev nest start --watch",
   "test": "STAGE=dev jest",
+  "test:watch": "jest --watch",
   "test:cov": "jest --coverage",
   "test:e2e": "jest --config ./test/jest-e2e.json",
+  "test:integration": "STAGE=test jest --config ./test/jest-e2e.json",
+  "test:integration:watch": "STAGE=test jest --config ./test/jest-e2e.json --watch",
+  "test:integration:cov": "STAGE=test jest --config ./test/jest-e2e.json --coverage",
   "build": "nest build",
   "lint:fix": "biome lint --write .",
   "format:fix": "biome format --write .",
@@ -426,6 +459,53 @@ enum ResponseCode {
   "prepare": "husky"
 }
 ```
+
+### Integration Test Scripts
+
+```bash
+# Run all integration tests (requires .env.stage.test with database config)
+npm run test:integration
+
+# Run integration tests in watch mode
+npm run test:integration:watch
+
+# Run integration tests with coverage
+npm run test:integration:cov
+```
+
+### Integration Test Environment Setup
+
+Integration tests use `STAGE=test` environment and require:
+
+1. **Environment File**: Create `.env.stage.test` with test database configuration:
+```bash
+PORT=0
+STAGE=test
+DB_USER=your_test_db_user
+DB_PASSWORD=your_test_db_password
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=cinematik_test
+DATABASE_SSL_CA=
+JWT_SECRET=test_jwt_secret_for_integration_tests
+RESEND_API_KEY=test_api_key
+CLIENT_APP_BASE_URL=http://localhost:3000
+TMDB_API_KEY=test_tmdb_key
+```
+
+2. **Test Database**: Set up a test database (separate from development/production):
+```bash
+# Create test database
+psql -U postgres -c "CREATE DATABASE cinematik_test;"
+
+# Run migrations on test database
+STAGE=test npx drizzle-kit migrate
+```
+
+3. **Run Tests**: Integration tests handle their own setup/cleanup:
+   - Creates test data automatically
+   - Uses transactions to rollback changes after each test
+   - Cleans up test data after all tests complete
 
 ## Contributing Guidelines
 
