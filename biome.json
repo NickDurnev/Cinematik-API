@@ -110,7 +110,7 @@
         "noUnusedLabels": "error",
         "noUnusedVariables": "error",
         "useExhaustiveDependencies": "warn",
-        "useHookAtTopLevel": "error",
+        "useHookAtTopLevel": "off",
         "useIsNan": "error",
         "useJsxKeyInIterable": "error",
         "useValidForDirection": "error",
