@@ -70,6 +70,7 @@ export class AuthService {
       await this.emailService.sendConfirmEmail(user, confirmationLink, true);
 
       const tokens = await this.generateTokens({
+        id: user.id,
         name: user.name,
         email: user.email,
       });
@@ -100,6 +101,7 @@ export class AuthService {
     }
 
     const tokens = await this.generateTokens({
+      id: user.id,
       name: user.name,
       email: user.email,
     });
@@ -125,6 +127,7 @@ export class AuthService {
       }
 
       const tokens = await this.generateTokens({
+        id: user.id,
         name: user.name,
         email: user.email,
       });
@@ -148,7 +151,11 @@ export class AuthService {
       const accessTokenExpires = 60 * 60; // 60 minutes in seconds
 
       const accessToken: string = await this.jwtService.sign(
-        { name: payload.name, email: payload.email },
+        {
+          id: payload.id,
+          name: payload.name,
+          email: payload.email,
+        },
         { expiresIn: "60m" },
       );
       return {
