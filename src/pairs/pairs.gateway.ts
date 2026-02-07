@@ -89,8 +89,13 @@ export class PairsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       // Notify user's pairs that they're online
       this.emitUserOnlineStatus(user.id, true);
 
-      // Send current online users to the connected user
-      client.emit("online-users", Array.from(this.onlineUsers.keys()));
+      // Send current online users to the connected user (filter falsy in case of stale state)
+      client.emit(
+        "online-users",
+        Array.from(this.onlineUsers.keys()).filter((id): id is string =>
+          Boolean(id),
+        ),
+      );
     } catch (error) {
       this.logger.error(`Connection error: ${error.message}`);
       client.disconnect();
@@ -122,8 +127,13 @@ export class PairsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private async validateToken(token: string): Promise<User | null> {
     try {
       const payload = await this.jwtService.verifyAsync(token);
+      const userId = payload.id;
+      if (!userId) {
+        this.logger.warn("JWT payload missing user id");
+        return null;
+      }
       return {
-        id: payload.id,
+        id: userId,
         name: payload.name,
         email: payload.email,
       } as User;
