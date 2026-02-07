@@ -244,8 +244,11 @@ export class PairsService {
       dto.mediaType,
     );
 
-    // Emit real-time notification
-    this.pairsGateway.notifySessionCreated(pairId, session);
+    // Emit real-time notification (pair room + each member's user room so partner gets it even when not on pair page)
+    this.pairsGateway.notifySessionCreated(pairId, session, [
+      pair.user1_id,
+      pair.user2_id,
+    ]);
 
     return session;
   }

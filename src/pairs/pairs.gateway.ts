@@ -229,12 +229,20 @@ export class PairsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   // ==================== Session Events ====================
 
-  notifySessionCreated(pairId: string, session: PairSession) {
-    this.server.to(`pair:${pairId}`).emit("session-created", {
+  notifySessionCreated(
+    pairId: string,
+    session: PairSession,
+    memberUserIds: [string, string],
+  ) {
+    const payload = {
       type: "session-created",
-      data: session,
+      data: { ...session, pairId },
       timestamp: new Date().toISOString(),
-    });
+    };
+    this.server.to(`pair:${pairId}`).emit("session-created", payload);
+    for (const userId of memberUserIds) {
+      this.server.to(`user:${userId}`).emit("session-created", payload);
+    }
 
     this.logger.log(`Notified pair ${pairId} of new session ${session.id}`);
   }
